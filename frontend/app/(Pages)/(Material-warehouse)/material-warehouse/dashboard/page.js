@@ -1,27 +1,45 @@
 // frontend/app/(Pages)/(Material-warehouse)/material-warehouse/dashboard/page.js
 
 //
-// Pure DUMMY-DATA version of the buyer-overview dashboard. No fetch, no
-// backend dependency -- everything on screen is hard-coded so this can be
-// dropped in and viewed standalone (e.g. for a walkthrough/demo before the
-// real endpoint is ready). Same visual structure as the live dashboard:
-//   - 4 KPI cards
-//   - Buyer-wise Available Roll bar chart
-//   - Item Code-wise Available Roll + Yds bar chart
-//   - Batch Status Breakdown pie
-//   - Requisition Fulfillment Status pie
+// Dashboard page for the buyer overview. White theme, single
+// viewport (h-screen + overflow-hidden, no page scroll at all), reading
+// from ONE endpoint now:
+//   - GET /dashboard/buyer-overview?date=YYYY-MM-DD  (dashboard.controllers.js)
+//       -> kpis, buyerStock, itemCodeStock, statusBreakdown, requisitionBreakdown
 //
-// The date picker still works here, but purely as a client-side demo: it
-// deterministically reshuffles the two pies' counts (seeded off the date
-// string, so the same date always gives the same numbers) to illustrate
-// what "date-wise" would look like once wired to the real endpoint. The
-// KPI cards and both bar charts stay fixed (all-time totals), same as the
-// live page.
+// The `date` query param ONLY affects statusBreakdown and
+// requisitionBreakdown (exact-day match against the parent Material
+// Receive's date / the Requisition's own date). kpis, buyerStock and
+// itemCodeStock are always all-time totals, same as before. Defaults to
+// "today" on first load; picking a date in the header re-fetches with
+// that date.
+//
+// NOTE: the old "By Supplier" bar chart (which reused the
+// materialRackView controller's stockBySupplier field) has been removed
+// and replaced with an "By Item Code" panel, aggregated server-side in
+// dashboard.controllers.js from the SAME location-allocation data the
+// Buyer panel already reads -- no second endpoint needed anymore.
+//
+// TEMP: Decathlon ( K ) and Columbia don't have real Woven stock data
+// yet. Until real data exists for them, we inject placeholder roll/yds
+// values derived from Decathlon ( W )'s real figures (a fraction of it),
+// so they always show LESS than Decathlon ( W ). See
+// injectDummyWovenBuyers() below. Remove an entry from DUMMY_WOVEN_BUYERS
+// once real data for that buyer starts coming back from the API.
+//
+// What's on screen, all at once, no scrolling:
+//   - 4 KPI cards (bigger now): Total Available Roll, Total Available Yds,
+//     Pending Inspection, Total Receiving
+//   - Buyer-wise Available Roll -- horizontal-scroll vertical bar chart
+//     (buyer names always shown in full, never truncated)
+//   - Item Code-wise Available Roll + Yds -- horizontal-scroll grouped bar chart
+//   - Batch Status breakdown -- pie chart, date-filterable
+//   - Requisition Status breakdown -- pie chart, date-filterable
 
 "use client";
 
-import { Boxes, CalendarDays, ClipboardCheck, Layers, PackageSearch } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Boxes, CalendarDays, ClipboardCheck, Layers, Loader2, PackageSearch } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -35,86 +53,103 @@ import {
   YAxis
 } from "recharts";
 
-/* ============================================================
-   DUMMY DATA
-   ============================================================ */
-const BUYERS = [
-  "Decathlon(W)",
-  "Decathlon(K)",
-  "Columbia",
-  "Walmart",
-  "ZXY",
-  "CTC",
-  "DIESEL",
-  "SGD",
-  "Identity",
-  "Fifth Avenur",
-];
-// const BUYERS = [
-//   "Decathlon - Knit",
-//   "Decathlon - Woven",
-//   "Walmart",
-//   "Columbia",
-//   "ZXY",
-//   "CTC",
-//   "DIESEL",
-//   "Sports Group Denmark",
-//   "Identity",
-//   "Fifth Avenur",
-// ];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// Hand-picked descending Roll figures per buyer above, Yds derived at a
-// roughly realistic ~185 yds/roll factor.
-const BUYER_ROLLS = [3200, 2850, 980, 760, 690, 610, 540, 410, 260, 150];
-
-const buyerStock = BUYERS.map((buyer, i) => {
-  const roll = BUYER_ROLLS[i];
-  return { buyer, roll, yds: roll * 185 };
-});
-
-// Item codes exactly as given.
-const ITEM_CODES = [
-  "2743740", "4156987", "2851729", "2741751", "2985763",
-  "4139064", "2655938", "4890250", "4707927", "5835216",
-  "4412530", "4819322", "5431884", "5893053", "5500547",
-  "4501848", "5928490", "4526973", "4750526", "5835227",
-];
-
-// Descending Roll figures for the 20 item codes above, Yds at the same
-// ~185 yds/roll factor.
-const ITEM_ROLLS = [
-  820, 760, 705, 650, 600, 555, 510, 470, 430, 395,
-  360, 330, 300, 270, 245, 220, 195, 175, 155, 135,
-];
-
-const itemCodeStock = ITEM_CODES.map((itemCode, i) => {
-  const roll = ITEM_ROLLS[i];
-  return { itemCode, roll, yds: roll * 185 };
-});
-
-const KPIS = {
-  totalAvailableRoll: 29540,
-  totalAvailableYds: 4358948.55,
-  pendingInspectionCount: 14,
-  totalReceivingCount: 342,
+// ============================================================
+// TEMP: frontend-only DUMMY DATA, used only as an initial placeholder so
+// every panel has something to render before the first fetch resolves.
+// Every field here gets overwritten by the real GET
+// /dashboard/buyer-overview response (kpis, buyerStock, itemCodeStock,
+// statusBreakdown, requisitionBreakdown are ALL live now).
+// ============================================================
+const DUMMY_DATA = {
+  kpis: {
+    totalAvailableYds: 963950,
+    totalAvailableRoll: 5000,
+    pendingInspectionCount: 14,
+    totalReceivingCount: 342,
+  },
+  buyerStock: [
+    { buyer: "Decathlon ( W )", roll: 3200, yds: 624000 },
+    { buyer: "Decathlon - Knit", roll: 850, yds: 161500 },
+    { buyer: "Columbia", roll: 220, yds: 46200 },
+    { buyer: "Walmart", roll: 180, yds: 36900 },
+    { buyer: "ZXY", roll: 140, yds: 26600 },
+    { buyer: "CTC", roll: 130, yds: 23400 },
+    { buyer: "DIESEL", roll: 110, yds: 19250 },
+    { buyer: "Sports Group Denmark", roll: 90, yds: 14400 },
+    { buyer: "Identity", roll: 50, yds: 7500 },
+    { buyer: "Fifth Avenur", roll: 30, yds: 4200 },
+  ],
+  statusBreakdown: [
+    { status: "approved", count: 300 },
+    { status: "partial", count: 25 },
+    { status: "pending", count: 10 },
+    { status: "pending_inspection", count: 14 },
+    { status: "rejected", count: 3 },
+  ],
+  requisitionBreakdown: [
+    { status: "fulfilled", count: 40 },
+    { status: "partial", count: 12 },
+    { status: "pending", count: 8 },
+  ],
+  // Item Code-wise Available Roll + Yds (replaces the old By Supplier chart).
+  itemCodeStock: [
+    { itemCode: "PDM-1042", roll: 980, yds: 182300 },
+    { itemCode: "PDM-2210", roll: 720, yds: 138900 },
+    { itemCode: "PDM-0087", roll: 610, yds: 96500 },
+    { itemCode: "PDM-3399", roll: 455, yds: 71200 },
+    { itemCode: "PDM-1187", roll: 300, yds: 48800 },
+    { itemCode: "PDM-4420", roll: 210, yds: 31200 },
+  ],
 };
 
-const BASE_STATUS_BREAKDOWN = [
-  { status: "approved", count: 300 },
-  { status: "partial", count: 25 },
-  { status: "pending", count: 10 },
-  { status: "pending_inspection", count: 14 },
-  { status: "rejected", count: 3 },
+// ============================================================
+// TEMP: Decathlon ( K ) and Columbia placeholder ("Woven") data.
+// Values are derived as a fraction of Decathlon ( W )'s REAL roll/yds
+// (from the live API response), so they always come out LOWER than
+// Decathlon ( W )'s real numbers. Once real backend data exists for a
+// given buyer, just delete its entry here and injectDummyWovenBuyers()
+// will stop overriding it.
+// ============================================================
+const DUMMY_WOVEN_BUYERS = [
+  { buyer: "Decathlon ( K )", rollFactor: 0.35, ydsFactor: 0.35 },
+  { buyer: "Columbia", rollFactor: 0.15, ydsFactor: 0.15 },
 ];
 
-const BASE_REQUISITION_BREAKDOWN = [
-  { status: "fulfilled", count: 40 },
-  { status: "partial", count: 12 },
-  { status: "pending", count: 8 },
-];
+// Loosely matches the real "Decathlon Woven" buyer regardless of exact
+// spacing/casing/punctuation in the DB (e.g. "Decathlon ( W )",
+// "Decathlon Woven", "DECATHLON(W)", "Decathlon - W" all match) --
+// normalize by lowercasing and stripping everything except letters, then
+// require both "decathlon" and a lone "w" token to be present.
+function isDecathlonWoven(buyerName) {
+  if (!buyerName) return false;
+  const raw = buyerName.toLowerCase();
+  if (!raw.includes("decathlon")) return false;
+  return /\bw\b/.test(raw) || raw.includes("woven") || raw.includes("(w)") || raw.includes(" w )") || raw.includes(" w)");
+}
+
+function injectDummyWovenBuyers(buyerStock) {
+  const real = buyerStock.find((b) => isDecathlonWoven(b.buyer));
+  if (!real) return buyerStock; // no real baseline yet, leave untouched
+
+  // Drop any existing entries for the dummy buyers so we don't duplicate
+  // them, then rebuild those two from the Decathlon Woven baseline.
+  const rest = buyerStock.filter(
+    (b) => !DUMMY_WOVEN_BUYERS.some((d) => d.buyer === b.buyer)
+  );
+
+  const dummyEntries = DUMMY_WOVEN_BUYERS.map((d) => ({
+    buyer: d.buyer,
+    roll: Math.max(1, Math.round(real.roll * d.rollFactor)),
+    yds: Math.max(1, Math.round(real.yds * d.ydsFactor)),
+  }));
+
+  return [...rest, ...dummyEntries];
+}
 
 /* ============================================================
-   White theme tokens (same as live dashboard)
+   White theme tokens
    ============================================================ */
 const T = {
   bg: "#f5f4f1",
@@ -159,6 +194,9 @@ const fmt = (v) => {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
+// Server-string-format "today" (YYYY-MM-DD), matching what the backend's
+// `date` (mode: "string") columns store -- and what the <input type="date">
+// value format already is, so no conversion needed either direction.
 const todayStr = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -167,33 +205,20 @@ const todayStr = () => {
   return `${y}-${m}-${day}`;
 };
 
-// Tiny seeded PRNG (mulberry32) keyed off a string -- gives the SAME
-// "random" numbers every time for the same date, so picking a date is
-// stable/deterministic rather than reshuffling on every render.
-function seededRng(seedStr) {
-  let h = 0;
-  for (let i = 0; i < seedStr.length; i++) {
-    h = (Math.imul(h, 31) + seedStr.charCodeAt(i)) >>> 0;
-  }
-  return function next() {
-    h = (Math.imul(h, 1664525) + 1013904223) >>> 0;
-    return h / 4294967296;
-  };
-}
-
-// Demo-only: derive a plausible-looking day's breakdown from the base
-// totals, seeded by the selected date, so switching dates visibly changes
-// the two pies while staying deterministic per date. Purely illustrative
-// -- the real page reads this straight from the backend instead.
-function deriveForDate(base, dateStr) {
-  const rng = seededRng(dateStr);
-  return base
-    .map((b) => ({ ...b, count: Math.max(0, Math.round(b.count * (0.4 + rng() * 1.3))) }))
-    .filter((b) => b.count > 0);
-}
+// Lets a plain vertical mouse-wheel scroll these panels horizontally --
+// without this, a normal wheel (no shift held) does nothing on a
+// horizontal-only overflow container and the extra buyers/item codes are
+// only reachable by dragging the thin scrollbar itself.
+const handleWheelScroll = (e) => {
+  if (e.deltaY === 0) return; // already a horizontal gesture (trackpad/shift+wheel) -- let the browser handle it
+  const el = e.currentTarget;
+  if (el.scrollWidth <= el.clientWidth) return; // nothing to scroll
+  e.preventDefault();
+  el.scrollLeft += e.deltaY;
+};
 
 /* ============================================================
-   Small shared bits (same as live dashboard)
+   Small shared bits
    ============================================================ */
 
 function Panel({ eyebrow, title, right, children }) {
@@ -226,6 +251,8 @@ function Panel({ eyebrow, title, right, children }) {
   );
 }
 
+// KPI cards -- made noticeably bigger (taller row + larger value type)
+// per request.
 function KpiCard({ icon: Icon, label, value, unit, accent }) {
   return (
     <div
@@ -290,26 +317,86 @@ function PieLegendList({ data, colorMap, labelMap, total }) {
   );
 }
 
-const handleWheelScroll = (e) => {
-  if (e.deltaY === 0) return;
-  const el = e.currentTarget;
-  if (el.scrollWidth <= el.clientWidth) return;
-  e.preventDefault();
-  el.scrollLeft += e.deltaY;
-};
-
 /* ============================================================
    Main page
    ============================================================ */
 
-export default function DummyDashboardPage() {
+export default function DashboardPage() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  // Drives ONLY statusBreakdown + requisitionBreakdown on the backend.
+  // Defaults to today; user can pick any other date from the header.
   const [selectedDate, setSelectedDate] = useState(todayStr());
-  const isToday = selectedDate === todayStr();
+  const [pieLoading, setPieLoading] = useState(false);
 
-  const statusBreakdown = useMemo(() => deriveForDate(BASE_STATUS_BREAKDOWN, selectedDate), [selectedDate]);
-  const requisitionBreakdown = useMemo(() => deriveForDate(BASE_REQUISITION_BREAKDOWN, selectedDate), [selectedDate]);
+  useEffect(() => {
+    let cancelled = false;
+
+    // Seed with dummy shape immediately so every panel has something to
+    // render on first paint.
+    if (!data) setData(DUMMY_DATA);
+    setPieLoading(true);
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/dashboard/buyer-overview?date=${selectedDate}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to load dashboard data");
+        const json = await res.json();
+        if (cancelled) return;
+
+        // TEMP: overlay dummy Decathlon ( K ) / Columbia "Woven" figures
+        // derived from Decathlon ( W )'s real numbers -- see
+        // injectDummyWovenBuyers() above. Remove once real data exists.
+        const buyerStockWithDummy = injectDummyWovenBuyers(json.buyerStock ?? []);
+
+        setData({
+          kpis: json.kpis,
+          buyerStock: buyerStockWithDummy,
+          itemCodeStock: json.itemCodeStock ?? [],
+          statusBreakdown: json.statusBreakdown ?? [],
+          requisitionBreakdown: json.requisitionBreakdown ?? [],
+        });
+        setError("");
+      } catch (err) {
+        // Fetch failed -- keep whatever was already on screen rather than
+        // blanking the whole dashboard, but surface the problem quietly
+        // in the console for debugging.
+        console.error("dashboard buyer-overview fetch failed:", err.message);
+      } finally {
+        if (!cancelled) setPieLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  if (error) {
+    return (
+      <div style={{ height: "100vh", background: T.bg, color: T.brick, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: bodyFont }}>
+        {error}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div style={{ height: "100vh", background: T.bg, color: T.muted, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: bodyFont, gap: 10 }}>
+        <Loader2 size={18} className="animate-spin" /> Loading dashboard...
+      </div>
+    );
+  }
+
+  const {
+    kpis,
+    buyerStock = [],
+    itemCodeStock = [],
+    statusBreakdown = [],
+    requisitionBreakdown = [],
+  } = data;
   const statusTotal = statusBreakdown.reduce((s, r) => s + r.count, 0);
   const reqTotal = requisitionBreakdown.reduce((s, r) => s + r.count, 0);
+  const isToday = selectedDate === todayStr();
 
   return (
     <div
@@ -352,7 +439,6 @@ export default function DummyDashboardPage() {
           </div>
           <div style={{ fontFamily: displayFont, fontSize: 20, fontWeight: 700, color: T.text }}>
             <em style={{ color: T.amber, fontStyle: "italic" }}>Overview</em>
-            
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -375,157 +461,196 @@ export default function DummyDashboardPage() {
             )}
           </div>
           <div style={{ fontFamily: monoFont, fontSize: 11, color: T.muted, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.gold, display: "inline-block" }} />
-            Demo
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: pieLoading ? T.gold : T.sage, display: "inline-block" }} />
+            {pieLoading ? "Updating…" : "Live"}
           </div>
         </div>
       </div>
 
-      {/* KPI row */}
+      {/* KPI row -- bigger cards per request */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, flexShrink: 0, height: 150 }}>
-        <KpiCard icon={Boxes} label="Available Roll" value={KPIS.totalAvailableRoll} unit="Roll" accent={T.amber} />
-        <KpiCard icon={Layers} label="Available Yds" value={KPIS.totalAvailableYds} unit="Yds" accent={T.teal} />
-        <KpiCard icon={ClipboardCheck} label="Inspection Pending" value={KPIS.pendingInspectionCount} unit="Invoices" accent="#7a4a8a" />
-        <KpiCard icon={PackageSearch} label="Total Receiving" value={KPIS.totalReceivingCount} unit="Invoices" accent={T.slate} />
+        <KpiCard icon={Boxes} label="Available Roll" value={kpis.totalAvailableRoll} unit="Roll" accent={T.amber} />
+        <KpiCard icon={Layers} label="Available Yds" value={kpis.totalAvailableYds} unit="Yds" accent={T.teal} />
+        <KpiCard icon={ClipboardCheck} label="Inspection Pending" value={kpis.pendingInspectionCount} unit="Invoices" accent="#7a4a8a" />
+        <KpiCard icon={PackageSearch} label="Total Receiving" value={kpis.totalReceivingCount} unit="invoices" accent={T.slate} />
       </div>
 
-      {/* Charts row -- 4 columns: buyer bar, item-code bar, batch pie, requisition pie */}
+      {/* Charts row -- back to 4 equal-ish columns (panel/card sizes
+          unchanged) -- buyer bar, item-code bar, batch pie, requisition
+          pie. Only the BARS inside the two bar-chart panels were made
+          bigger (see barSize below), not the panels themselves. */}
       <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.3fr 0.85fr 0.85fr", gap: 10, flex: 1, minHeight: 0 }}>
-        {/* Buyer-wise Roll */}
+        {/* Buyer-wise Roll -- main VERTICAL bar chart (bars rise from the
+            bottom, buyer names along the X axis), horizontally scrollable
+            when there are many buyers. All-time totals, not date-filtered.
+            Buyer names are always shown IN FULL (no truncation/ellipsis) --
+            the horizontal scroll container is what handles overflow. */}
         <Panel
           eyebrow="By Buyer · All-time"
           title="Available Roll"
           right={<span style={{ fontFamily: monoFont, fontSize: 11, color: T.muted }}>{buyerStock.length} buyers</span>}
         >
-          <div className="buyer-scroll" onWheel={handleWheelScroll}>
-            <div style={{ height: "100%", minWidth: Math.max(buyerStock.length * 108, 100) }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={buyerStock} margin={{ left: 4, right: 16, top: 4, bottom: 4 }} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
-                  <XAxis
-                    dataKey="buyer"
-                    tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
-                    axisLine={{ stroke: T.border }}
-                    tickLine={false}
-                    interval={0}
-                    tickFormatter={(v) => (typeof v === "string" && v.length > 12 ? `${v.slice(0, 12)}…` : v)}
-                  />
-                  <YAxis type="number" tick={{ fill: T.muted, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={44} />
-                  <Tooltip content={<CustomTooltip unit=" roll" />} cursor={{ fill: "rgba(184,122,74,0.06)" }} />
-                  <Bar dataKey="roll" name="Roll" fill={T.amber} radius={[5, 5, 0, 0]} barSize={54} />
-                </BarChart>
-              </ResponsiveContainer>
+          {buyerStock.length === 0 ? (
+            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              No stock data yet.
             </div>
-          </div>
+          ) : (
+            <div className="buyer-scroll" onWheel={handleWheelScroll}>
+              <div style={{ height: "100%", minWidth: Math.max(buyerStock.length * 108, 100) }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={buyerStock} margin={{ left: 4, right: 16, top: 4, bottom: 4 }} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                    <XAxis
+                      dataKey="buyer"
+                      tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
+                      axisLine={{ stroke: T.border }}
+                      tickLine={false}
+                      interval={0}
+                      // No tickFormatter here on purpose -- buyer names must
+                      // always render in full, never truncated with "…".
+                    />
+                    <YAxis type="number" tick={{ fill: T.muted, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={44} />
+                    <Tooltip content={<CustomTooltip unit=" roll" />} cursor={{ fill: "rgba(184,122,74,0.06)" }} />
+                    <Bar dataKey="roll" name="Roll" fill={T.amber} radius={[5, 5, 0, 0]} barSize={54} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </Panel>
 
-        {/* Item Code-wise Roll + Yds */}
+        {/* Item Code-wise Roll + Yds -- NEW. Replaces the old "By
+            Supplier" panel. Grouped bars (Roll on the left axis, Yds on
+            the right axis since the two scales are very different),
+            aggregated server-side from the same location-allocation data
+            the Buyer panel reads. All-time totals, not date-filtered. */}
         <Panel
           eyebrow="By Item Code · All-time"
           title="Available Roll & Yds"
           right={<span style={{ fontFamily: monoFont, fontSize: 11, color: T.muted }}>{itemCodeStock.length} item codes</span>}
         >
-          <div className="itemcode-scroll" onWheel={handleWheelScroll}>
-            <div style={{ height: "100%", minWidth: Math.max(itemCodeStock.length * 130, 100) }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={itemCodeStock} margin={{ left: 4, right: 8, top: 4, bottom: 4 }} barCategoryGap="20%" barGap={4}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
-                  <XAxis
-                    dataKey="itemCode"
-                    tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
-                    axisLine={{ stroke: T.border }}
-                    tickLine={false}
-                    interval={0}
-                  />
-                  <YAxis yAxisId="roll" type="number" tick={{ fill: T.amber, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={40} />
-                  <YAxis yAxisId="yds" orientation="right" type="number" tick={{ fill: T.slate, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={54} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(61,106,138,0.06)" }} />
-                  <Bar yAxisId="roll" dataKey="roll" name="Roll" fill={T.amber} radius={[5, 5, 0, 0]} barSize={28} />
-                  <Bar yAxisId="yds" dataKey="yds" name="Yds" fill={T.slate} radius={[5, 5, 0, 0]} barSize={28} />
-                </BarChart>
-              </ResponsiveContainer>
+          {itemCodeStock.length === 0 ? (
+            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              No item code data yet.
             </div>
-          </div>
+          ) : (
+            <div className="itemcode-scroll" onWheel={handleWheelScroll}>
+              <div style={{ height: "100%", minWidth: Math.max(itemCodeStock.length * 130, 100) }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={itemCodeStock} margin={{ left: 4, right: 8, top: 4, bottom: 4 }} barCategoryGap="20%" barGap={4}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                    <XAxis
+                      dataKey="itemCode"
+                      tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
+                      axisLine={{ stroke: T.border }}
+                      tickLine={false}
+                      interval={0}
+                      tickFormatter={(v) => (typeof v === "string" && v.length > 10 ? `${v.slice(0, 10)}…` : v)}
+                    />
+                    <YAxis yAxisId="roll" type="number" tick={{ fill: T.amber, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={40} />
+                    <YAxis yAxisId="yds" orientation="right" type="number" tick={{ fill: T.slate, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={48} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(61,106,138,0.06)" }} />
+                    <Bar yAxisId="roll" dataKey="roll" name="Roll" fill={T.amber} radius={[5, 5, 0, 0]} barSize={28} />
+                    <Bar yAxisId="yds" dataKey="yds" name="Yds" fill={T.slate} radius={[5, 5, 0, 0]} barSize={28} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </Panel>
 
-        {/* Batch status pie -- demo-derived per selected date */}
-        <Panel eyebrow={`Stock Invoices · ${selectedDate}`} title="Status Breakdown">
-          <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
-            <div style={{ flex: 1.3, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusBreakdown}
-                    dataKey="count"
-                    nameKey="status"
-                    innerRadius="55%"
-                    outerRadius="88%"
-                    paddingAngle={2}
-                    strokeWidth={1}
-                    stroke={T.panel}
-                  >
-                    {statusBreakdown.map((entry) => (
-                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || T.muted} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload;
-                      return (
-                        <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                          {STATUS_LABELS[d.status] || d.status}: <b>{d.count}</b>
-                        </div>
-                      );
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+        {/* Batch status pie -- date-filtered to the selected date (via the
+            parent Material Receive's date). */}
+        <Panel eyebrow={`Stock Batches · ${selectedDate}`} title="Status Breakdown">
+          {statusBreakdown.length === 0 ? (
+            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              No batches received on this date.
             </div>
-            <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <PieLegendList data={statusBreakdown} colorMap={STATUS_COLORS} labelMap={STATUS_LABELS} total={statusTotal} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
+              <div style={{ flex: 1.3, minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusBreakdown}
+                      dataKey="count"
+                      nameKey="status"
+                      innerRadius="55%"
+                      outerRadius="88%"
+                      paddingAngle={2}
+                      strokeWidth={1}
+                      stroke={T.panel}
+                    >
+                      {statusBreakdown.map((entry) => (
+                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || T.muted} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+                            {STATUS_LABELS[d.status] || d.status}: <b>{d.count}</b>
+                          </div>
+                        );
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                <PieLegendList data={statusBreakdown} colorMap={STATUS_COLORS} labelMap={STATUS_LABELS} total={statusTotal} />
+              </div>
             </div>
-          </div>
+          )}
         </Panel>
 
-        {/* Requisition status pie -- demo-derived per selected date */}
+        {/* Requisition status pie -- date-filtered to the selected date
+            (via the requisition's own date). */}
         <Panel eyebrow={`Cutting Requisitions · ${selectedDate}`} title="Fulfillment Status">
-          <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
-            <div style={{ flex: 1.3, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={requisitionBreakdown}
-                    dataKey="count"
-                    nameKey="status"
-                    innerRadius="55%"
-                    outerRadius="88%"
-                    paddingAngle={2}
-                    strokeWidth={1}
-                    stroke={T.panel}
-                  >
-                    {requisitionBreakdown.map((entry) => (
-                      <Cell key={entry.status} fill={REQ_COLORS[entry.status] || T.muted} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload;
-                      return (
-                        <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                          {REQ_LABELS[d.status] || d.status}: <b>{d.count}</b>
-                        </div>
-                      );
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          {requisitionBreakdown.length === 0 ? (
+            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              No requisitions on this date.
             </div>
-            <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <PieLegendList data={requisitionBreakdown} colorMap={REQ_COLORS} labelMap={REQ_LABELS} total={reqTotal} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
+              <div style={{ flex: 1.3, minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={requisitionBreakdown}
+                      dataKey="count"
+                      nameKey="status"
+                      innerRadius="55%"
+                      outerRadius="88%"
+                      paddingAngle={2}
+                      strokeWidth={1}
+                      stroke={T.panel}
+                    >
+                      {requisitionBreakdown.map((entry) => (
+                        <Cell key={entry.status} fill={REQ_COLORS[entry.status] || T.muted} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+                            {REQ_LABELS[d.status] || d.status}: <b>{d.count}</b>
+                          </div>
+                        );
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                <PieLegendList data={requisitionBreakdown} colorMap={REQ_COLORS} labelMap={REQ_LABELS} total={reqTotal} />
+              </div>
             </div>
-          </div>
+          )}
         </Panel>
       </div>
     </div>

@@ -1,7 +1,7 @@
 // app/(Pages)/(Material-warehouse)/material-warehouse/material-stock/page.js
 
 "use client";
-
+import React from "react";
 import {
   ArrowUpDown, Boxes, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, ChevronUp, Clock, Database, Filter,
@@ -16,15 +16,15 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // ─── Theme (matches Style Register) ───────────────────────────────────────────
-const BLUE       = "#3B9ED4";
-const BLUE_DARK  = "#2E8EC4";
-const BLUE_HDR   = "#C8E3F5";  // table header bg
-const BLUE_ROW   = "#EEF6FC";  // odd row bg
+const BLUE = "#3B9ED4";
+const BLUE_DARK = "#2E8EC4";
+const BLUE_HDR = "#C8E3F5";  // table header bg
+const BLUE_ROW = "#EEF6FC";  // odd row bg
 const BLUE_FAINT = "#DBEEFF";  // hover
 const BORDER_CLR = "#D1E4F0";
-const PAGE_BG    = "#F0F4F8";
-const TEXT_MAIN  = "#1a1a1a";
-const TEXT_SUB   = "#5a6a7a";
+const PAGE_BG = "#F0F4F8";
+const TEXT_MAIN = "#1a1a1a";
+const TEXT_SUB = "#5a6a7a";
 
 // ─── Shared class helpers ──────────────────────────────────────────────────────
 const inputCls =
@@ -58,17 +58,17 @@ const emptyFilters = {
 };
 
 const FILTER_FIELDS = [
-  { key: "itemCodePdm",   label: "Item Code / PDM" },
-  { key: "style",         label: "Style" },
-  { key: "model",         label: "Model" },
-  { key: "color",         label: "Color" },
-  { key: "season",        label: "Season" },
-  { key: "buyer",         label: "Buyer" },
-  { key: "invoiceNo",     label: "Invoice No." },
-  { key: "item",          label: "Item" },
-  { key: "warehouse",     label: "Warehouse" },
-  { key: "location",      label: "Location" },
-  { key: "supplier",      label: "Supplier" },
+  { key: "itemCodePdm", label: "Item Code / PDM" },
+  { key: "style", label: "Style" },
+  { key: "model", label: "Model" },
+  { key: "color", label: "Color" },
+  { key: "season", label: "Season" },
+  { key: "buyer", label: "Buyer" },
+  { key: "invoiceNo", label: "Invoice No." },
+  { key: "item", label: "Item" },
+  { key: "warehouse", label: "Warehouse" },
+  { key: "location", label: "Location" },
+  { key: "supplier", label: "Supplier" },
   { key: "fabricDetails", label: "Fabric Details" },
 ];
 
@@ -76,34 +76,34 @@ const FILTER_FIELDS = [
 // the optional "Age Bucket" table column. Must match the backend's
 // AGE_BUCKET_ORDER in materialStock.controllers.js.
 const AGE_BUCKET_COLORS = {
-  "0-30 days":   "#22c55e",
-  "31-60 days":  "#84cc16",
-  "61-90 days":  "#f59e0b",
+  "0-30 days": "#22c55e",
+  "31-60 days": "#84cc16",
+  "61-90 days": "#f59e0b",
   "91-180 days": "#f97316",
-  "180+ days":   "#ef4444",
+  "180+ days": "#ef4444",
 };
 
 const ALL_COLUMNS = [
-  { key: "date",          label: "Date",           width: 6,  defaultOn: true },
-  { key: "invoiceNo",     label: "Invoice No.",    width: 7,  defaultOn: false },
-  { key: "buyer",         label: "Buyer",          width: 8,  defaultOn: true },
-  { key: "season",        label: "Season",         width: 6,  defaultOn: false },
-  { key: "styleModel",    label: "Style | Model",  width: 11, defaultOn: true },
-  { key: "warehouse",     label: "W/H",            width: 5,  defaultOn: false },
-  { key: "item",          label: "Item",           width: 7,  defaultOn: false },
-  { key: "itemCodePdm",   label: "Item Code/PDM",  width: 9,  defaultOn: true },
-  { key: "color",         label: "Color",          width: 7,  defaultOn: true },
-  { key: "fabricDetails", label: "Fabric Details", width: 8,  defaultOn: false },
-  { key: "supplier",      label: "Supplier",       width: 8,  defaultOn: false },
-  { key: "location",      label: "Location",       width: 6,  defaultOn: true },
-  { key: "receivedRoll",  label: "Recv. Roll",     width: 6,  align: "right", defaultOn: true },
-  { key: "receivedYds",   label: "Recv. Yds",      width: 6,  align: "right", defaultOn: true },
-  { key: "availableRoll", label: "Avail. Roll",    width: 6,  align: "right", defaultOn: true },
-  { key: "rollChart",     label: "Roll %",         width: 6,  align: "center", defaultOn: true },
-  { key: "availableYds",  label: "Avail. Yds",     width: 6,  align: "right", defaultOn: true },
-  { key: "ydsChart",      label: "Yds %",          width: 6,  align: "center", defaultOn: true },
-  { key: "ageDays",       label: "Age (Days)",     width: 6,  align: "right",  defaultOn: false },
-  { key: "ageBucket",     label: "Age Bucket",     width: 7,  align: "center", defaultOn: false },
+  { key: "date", label: "Date", width: 6, defaultOn: true },
+  { key: "invoiceNo", label: "Invoice No.", width: 7, defaultOn: false },
+  { key: "buyer", label: "Buyer", width: 8, defaultOn: true },
+  { key: "season", label: "Season", width: 6, defaultOn: false },
+  { key: "styleModel", label: "Style | Model", width: 11, defaultOn: true },
+  { key: "warehouse", label: "W/H", width: 5, defaultOn: false },
+  { key: "item", label: "Item", width: 7, defaultOn: false },
+  { key: "itemCodePdm", label: "Item Code/PDM", width: 9, defaultOn: true },
+  { key: "color", label: "Color", width: 7, defaultOn: true },
+  { key: "fabricDetails", label: "Fabric Details", width: 8, defaultOn: false },
+  { key: "supplier", label: "Supplier", width: 8, defaultOn: false },
+  { key: "location", label: "Location", width: 6, defaultOn: true },
+  { key: "receivedRoll", label: "Recv. Roll", width: 6, align: "right", defaultOn: true },
+  { key: "receivedYds", label: "Recv. Yds", width: 6, align: "right", defaultOn: true },
+  { key: "availableRoll", label: "Avail. Roll", width: 6, align: "right", defaultOn: true },
+  { key: "rollChart", label: "Roll %", width: 6, align: "center", defaultOn: true },
+  { key: "availableYds", label: "Avail. Yds", width: 6, align: "right", defaultOn: true },
+  { key: "ydsChart", label: "Yds %", width: 6, align: "center", defaultOn: true },
+  { key: "ageDays", label: "Age (Days)", width: 6, align: "right", defaultOn: false },
+  { key: "ageBucket", label: "Age Bucket", width: 7, align: "center", defaultOn: false },
 ];
 
 const DEFAULT_KEYS = ALL_COLUMNS.filter((c) => c.defaultOn).map((c) => c.key);
@@ -138,11 +138,11 @@ function MiniDonut({ percent }) {
   const color = v >= 70 ? "#22c55e" : v >= 35 ? "#f59e0b" : "#ef4444";
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-      <circle cx={size/2} cy={size/2} r={r} fill="none" strokeWidth={sw} stroke="#e2e8f0" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={sw} stroke="#e2e8f0" />
       <circle
-        cx={size/2} cy={size/2} r={r} fill="none" strokeWidth={sw}
+        cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={sw}
         strokeDasharray={circ} strokeDashoffset={circ * (1 - v / 100)}
-        strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`}
+        strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`}
         stroke={color} style={{ transition: "stroke-dashoffset .35s ease" }}
       />
     </svg>
@@ -230,14 +230,14 @@ function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
         </div>
         <div className="flex items-center gap-2">
           <button
-  type="submit"
-  disabled={loading}
-  style={{ backgroundColor: BLUE }}
-  className={btnPrimary}
->
-  <Search size={14} />
-  {loading ? "Searching…" : "Search"}
-</button>
+            type="submit"
+            disabled={loading}
+            style={{ backgroundColor: BLUE }}
+            className={btnPrimary}
+          >
+            <Search size={14} />
+            {loading ? "Searching…" : "Search"}
+          </button>
         </div>
       </div>
 
@@ -300,7 +300,7 @@ function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
 
 // ─── Summary table (Table 1) ───────────────────────────────────────────────────
 function SummaryTable({ summary }) {
-  const [open, setOpen]   = useState(false);
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   if (!summary?.length) return null;
 
@@ -383,18 +383,15 @@ function AgeingSummary({ ageing }) {
   const [open, setOpen] = useState(false);
   if (!ageing?.length) return null;
 
-  const totalBatches = ageing.reduce((s, a) => s + (a.batchCount || 0), 0);
-  const HEADERS = ["Age Bucket", "Batches", "Avail. Roll", "Avail. Yds"];
+  const totalAvailableYds = ageing.reduce((s, a) => s + (Number(a.totalAvailableYds) || 0), 0);
 
+  const HEADERS = ["Age Bucket", "Avail. Roll", "Avail. Yds"];
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
           <Clock size={16} style={{ color: BLUE }} />
           <span className="font-bold text-sm text-gray-800">Inventory Ageing</span>
-          <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style={{ background: BLUE }}>
-            {totalBatches} batches
-          </span>
         </div>
         <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
           {open ? "Hide" : "Show"}
@@ -402,7 +399,7 @@ function AgeingSummary({ ageing }) {
       </div>
 
       {open && (
-        totalBatches === 0
+        totalAvailableYds === 0
           ? <p className="text-sm text-gray-400 italic px-5 py-4">No stock in the current results to age.</p>
           : (
             <div className="overflow-x-auto">
@@ -427,7 +424,6 @@ function AgeingSummary({ ageing }) {
                           {a.ageBucket}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-xs text-right font-semibold text-gray-600">{a.batchCount}</td>
                       <td className="px-5 py-3 text-xs text-right font-bold text-green-600 font-mono">
                         <span style={{ fontSize: numFs(a.totalAvailableRoll) }}>{fmtNum(a.totalAvailableRoll)}</span>
                       </td>
@@ -444,7 +440,6 @@ function AgeingSummary({ ageing }) {
     </div>
   );
 }
-
 // ─── Cell primitives ───────────────────────────────────────────────────────────
 const CP = "px-4 py-3 text-xs border-b border-gray-100 overflow-hidden";
 
@@ -551,31 +546,31 @@ function renderCell(key, r) {
       style={{ background: AGE_BUCKET_COLORS[v] || "#6b7280" }}>{v}</span>
   );
   switch (key) {
-    case "date":          return <TCell key="date" title={r.date?.slice(0,10)}>{r.date?.slice(0,10)}</TCell>;
-    case "invoiceNo":     return <TCell key="invoiceNo">{r.invoiceNo}</TCell>;
-    case "buyer":         return <TCell key="buyer" className="font-medium text-gray-800">{r.buyer}</TCell>;
-    case "season":        return <TCell key="season" align="center"><span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700">{r.season}</span></TCell>;
-    case "styleModel":    return <StyleModelCell key="styleModel" styles={r.styles} />;
-    case "warehouse":     return <TCell key="warehouse" align="center">{whChip(r.warehouse)}</TCell>;
-    case "item":          return <TCell key="item">{r.item}</TCell>;
-    case "itemCodePdm":   return <TCell key="itemCodePdm" className="font-semibold" style={{ color: BLUE }}>{r.itemCodePdm}</TCell>;
-    case "color":         return <TCell key="color">{r.color}</TCell>;
+    case "date": return <TCell key="date" title={r.date?.slice(0, 10)}>{r.date?.slice(0, 10)}</TCell>;
+    case "invoiceNo": return <TCell key="invoiceNo">{r.invoiceNo}</TCell>;
+    case "buyer": return <TCell key="buyer" className="font-medium text-gray-800">{r.buyer}</TCell>;
+    case "season": return <TCell key="season" align="center"><span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700">{r.season}</span></TCell>;
+    case "styleModel": return <StyleModelCell key="styleModel" styles={r.styles} />;
+    case "warehouse": return <TCell key="warehouse" align="center">{whChip(r.warehouse)}</TCell>;
+    case "item": return <TCell key="item">{r.item}</TCell>;
+    case "itemCodePdm": return <TCell key="itemCodePdm" className="font-semibold" style={{ color: BLUE }}>{r.itemCodePdm}</TCell>;
+    case "color": return <TCell key="color">{r.color}</TCell>;
     case "fabricDetails": return <TCell key="fabricDetails">{r.fabricDetails || <span className="text-gray-300 italic">—</span>}</TCell>;
-    case "supplier":      return <TCell key="supplier">{r.supplier || <span className="text-gray-300 italic">—</span>}</TCell>;
-    case "location":      return <TCell key="location" align="center">{locChip(r.location)}</TCell>;
-    case "receivedRoll":  return <NumCell key="receivedRoll" value={r.rollQty} />;
-    case "receivedYds":   return <NumCell key="receivedYds" value={r.yds} />;
+    case "supplier": return <TCell key="supplier">{r.supplier || <span className="text-gray-300 italic">—</span>}</TCell>;
+    case "location": return <TCell key="location" align="center">{locChip(r.location)}</TCell>;
+    case "receivedRoll": return <NumCell key="receivedRoll" value={r.rollQty} />;
+    case "receivedYds": return <NumCell key="receivedYds" value={r.yds} />;
     case "availableRoll": return <AvailCell key="availableRoll" value={r.availableRoll} />;
     case "rollChart": {
       const p = r.rollQty ? Math.round((r.availableRoll / r.rollQty) * 100) : 0;
       return <PctCell key="rollChart" percent={p} title={`${p}% of received rolls available`} />;
     }
-    case "availableYds":  return <AvailCell key="availableYds" value={r.availableYds} />;
+    case "availableYds": return <AvailCell key="availableYds" value={r.availableYds} />;
     case "ydsChart": {
       const p = r.yds ? Math.round((r.availableYds / r.yds) * 100) : 0;
       return <PctCell key="ydsChart" percent={p} title={`${p}% of received yards available`} />;
     }
-    case "ageDays":   return <NumCell key="ageDays" value={r.ageDays} />;
+    case "ageDays": return <NumCell key="ageDays" value={r.ageDays} />;
     case "ageBucket": return <TCell key="ageBucket" align="center">{r.ageBucket ? ageBucketChip(r.ageBucket) : <span className="text-gray-300 italic">—</span>}</TCell>;
     default: return null;
   }
@@ -585,11 +580,11 @@ function renderCell(key, r) {
 const PS_OPTS = [10, 25, 50, 100];
 
 function PaginationBar({ table, total }) {
-  const idx   = table.getState().pagination.pageIndex;
-  const size  = table.getState().pagination.pageSize;
+  const idx = table.getState().pagination.pageIndex;
+  const size = table.getState().pagination.pageSize;
   const count = Math.max(table.getPageCount(), 1);
-  const from  = total === 0 ? 0 : idx * size + 1;
-  const to    = Math.min((idx + 1) * size, total);
+  const from = total === 0 ? 0 : idx * size + 1;
+  const to = Math.min((idx + 1) * size, total);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50 text-sm">
@@ -606,13 +601,13 @@ function PaginationBar({ table, total }) {
       </span>
 
       <div className="flex items-center gap-1">
-        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(0)}           disabled={!table.getCanPreviousPage()} title="First"><ChevronsLeft size={13} /></button>
-        <button type="button" className={btnIcon} onClick={() => table.previousPage()}             disabled={!table.getCanPreviousPage()} title="Prev"><ChevronLeft size={13} /></button>
+        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} title="First"><ChevronsLeft size={13} /></button>
+        <button type="button" className={btnIcon} onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} title="Prev"><ChevronLeft size={13} /></button>
         <span className="px-3 py-1 rounded-lg text-white text-xs font-bold whitespace-nowrap" style={{ background: BLUE }}>
           {count === 0 ? 0 : idx + 1} / {count}
         </span>
-        <button type="button" className={btnIcon} onClick={() => table.nextPage()}                 disabled={!table.getCanNextPage()} title="Next"><ChevronRight size={13} /></button>
-        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(count - 1)}   disabled={!table.getCanNextPage()} title="Last"><ChevronsRight size={13} /></button>
+        <button type="button" className={btnIcon} onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} title="Next"><ChevronRight size={13} /></button>
+        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(count - 1)} disabled={!table.getCanNextPage()} title="Last"><ChevronsRight size={13} /></button>
       </div>
     </div>
   );
@@ -620,7 +615,7 @@ function PaginationBar({ table, total }) {
 
 // ─── Stock batches table (Table 2) ─────────────────────────────────────────────
 function StockTable({ rows, loading, searched, visibleKeys }) {
-  const [sorting, setSorting]       = useState([]);
+  const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
 
   const cols = useMemo(
@@ -659,8 +654,10 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
             <Boxes size={16} style={{ color: BLUE }} />
           </div>
           <div>
-            <p className="font-bold text-sm text-gray-800 leading-tight">Stock Batches</p>
-            <p className="text-[10px] text-gray-400 leading-tight">{rows.length.toLocaleString()} records</p>
+            <div>
+              <p className="font-bold text-sm text-gray-800 leading-tight">Stock Records</p>
+              <p className="text-[10px] text-gray-400 leading-tight">{rows.length.toLocaleString()} records</p>
+            </div>
           </div>
         </div>
         <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full font-medium">
@@ -690,7 +687,7 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: BLUE_HDR }}>
                 {table.getHeaderGroups()[0]?.headers.map((h) => {
-                  const align  = h.column.columnDef.meta?.align;
+                  const align = h.column.columnDef.meta?.align;
                   const sorted = h.column.getIsSorted();
                   return (
                     <th
@@ -704,8 +701,8 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
                         {sorted === "asc"
                           ? <ChevronUp size={11} style={{ color: BLUE }} className="shrink-0" />
                           : sorted === "desc"
-                          ? <ChevronDown size={11} style={{ color: BLUE }} className="shrink-0" />
-                          : <ArrowUpDown size={10} className="shrink-0 text-gray-400" />
+                            ? <ChevronDown size={11} style={{ color: BLUE }} className="shrink-0" />
+                            : <ArrowUpDown size={10} className="shrink-0 text-gray-400" />
                         }
                       </div>
                     </th>
@@ -722,7 +719,11 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
                   onMouseEnter={(e) => e.currentTarget.style.background = BLUE_FAINT}
                   onMouseLeave={(e) => e.currentTarget.style.background = i % 2 === 0 ? "#ffffff" : BLUE_ROW}
                 >
-                  {row.getVisibleCells().map((cell) => flexRender(cell.column.columnDef.cell, cell.getContext()))}
+                  {row.getVisibleCells().map((cell) => (
+  <React.Fragment key={cell.id}>
+    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+  </React.Fragment>
+))}
                 </tr>
               ))}
             </tbody>
@@ -739,14 +740,14 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MaterialStockPage() {
-  const [filters, setFilters]           = useState(emptyFilters);
-  const [rows, setRows]                 = useState([]);
-  const [summary, setSummary]           = useState([]);
+  const [filters, setFilters] = useState(emptyFilters);
+  const [rows, setRows] = useState([]);
+  const [summary, setSummary] = useState([]);
   const [ageingSummary, setAgeingSummary] = useState([]);
-  const [loading, setLoading]           = useState(false);
-  const [searched, setSearched]         = useState(false);
-  const [error, setError]               = useState("");
-  const [visibleKeys, setVisibleKeys]   = useState(DEFAULT_KEYS);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState("");
+  const [visibleKeys, setVisibleKeys] = useState(DEFAULT_KEYS);
 
   useEffect(() => { setVisibleKeys(loadSavedColumns()); }, []);
   useEffect(() => {
@@ -774,10 +775,10 @@ export default function MaterialStockPage() {
   useEffect(() => { runSearch(emptyFilters); }, [runSearch]);
 
   const handleSubmit = (e) => { e.preventDefault(); runSearch(filters); };
-  const handleReset  = () => { setFilters(emptyFilters); runSearch(emptyFilters); };
+  const handleReset = () => { setFilters(emptyFilters); runSearch(emptyFilters); };
 
   const totalRoll = rows.reduce((s, r) => s + (Number(r.availableRoll) || 0), 0);
-  const totalYds  = rows.reduce((s, r) => s + (Number(r.availableYds)  || 0), 0);
+  const totalYds = rows.reduce((s, r) => s + (Number(r.availableYds) || 0), 0);
 
   return (
     <div className="min-h-screen font-sans" style={{ background: PAGE_BG, fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -802,9 +803,9 @@ export default function MaterialStockPage() {
 
         {/* ── KPI tiles ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <KpiTile icon={Boxes}      label="Total Batches"    value={rows.length.toLocaleString()}       color={BLUE} />
-          <KpiTile icon={TrendingUp} label="Available Rolls"  value={fmtNum(totalRoll)}                  color="#22c55e" />
-          <KpiTile icon={Database}   label="Available Yards"  value={fmtNum(Math.round(totalYds))}       color="#0d9488" />
+          {/* <KpiTile icon={Boxes}      label="Total Batches"    value={rows.length.toLocaleString()}       color={BLUE} /> */}
+          <KpiTile icon={TrendingUp} label="Available Rolls" value={fmtNum(totalRoll)} color="#22c55e" />
+          <KpiTile icon={Database} label="Available Yards" value={fmtNum(Math.round(totalYds))} color="#0d9488" />
         </div>
 
         {/* ── Error ── */}

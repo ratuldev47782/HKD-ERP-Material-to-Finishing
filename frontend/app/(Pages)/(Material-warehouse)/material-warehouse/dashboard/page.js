@@ -27,18 +27,27 @@
 // injectDummyWovenBuyers() below. Remove an entry from DUMMY_WOVEN_BUYERS
 // once real data for that buyer starts coming back from the API.
 //
+// NEW: Supplier Ranking panel, sourced from the monthly
+// "Suppliers Performance Evaluation" sheet (Quality/Delivery/Service ->
+// Achieve % -> Grade). This is currently seeded from the latest
+// Suppliers_Ranking.xlsx export as static data (SUPPLIER_RANKING_DATA
+// below) since there isn't a backend endpoint for it yet. Swap that
+// constant for a real fetch once one exists -- the panel itself doesn't
+// need to change, it just expects the same shape.
+//
 // What's on screen, all at once, no scrolling:
 //   - 4 KPI cards (bigger now): Total Available Roll, Total Available Yds,
 //     Pending Inspection, Total Receiving
 //   - Buyer-wise Available Roll -- horizontal-scroll vertical bar chart
 //     (buyer names always shown in full, never truncated)
 //   - Item Code-wise Available Roll + Yds -- horizontal-scroll grouped bar chart
+//   - Supplier Ranking -- vertical-scroll ranked list, graded A/B/C
 //   - Batch Status breakdown -- pie chart, date-filterable
 //   - Requisition Status breakdown -- pie chart, date-filterable
 
 "use client";
 
-import { Boxes, CalendarDays, ClipboardCheck, Layers, Loader2, PackageSearch } from "lucide-react";
+import { Boxes, CalendarDays, ClipboardCheck, Layers, Loader2, PackageSearch, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Bar,
@@ -113,7 +122,7 @@ const DUMMY_DATA = {
 // will stop overriding it.
 // ============================================================
 const DUMMY_WOVEN_BUYERS = [
-  { buyer: "Decathlon ( K )", rollFactor: 0.35, ydsFactor: 0.35 },
+  { buyer: "Decathlon-Knit", rollFactor: 0.35, ydsFactor: 0.35 },
   { buyer: "Columbia", rollFactor: 0.15, ydsFactor: 0.15 },
 ];
 
@@ -147,6 +156,32 @@ function injectDummyWovenBuyers(buyerStock) {
 
   return [...rest, ...dummyEntries];
 }
+
+// ============================================================
+// NEW: Supplier Ranking source data -- lifted directly from the
+// "Suppliers Performance Evaluation" xlsx (Month: Aug 2026). Rows where
+// the sheet had #DIV/0! (no consignments that month, so quality/
+// delivery/service/achieve% are all undefined) are kept with
+// achievePct: null and grade: null so they render as "N/A" and sort to
+// the bottom, instead of being silently dropped.
+// ============================================================
+const SUPPLIER_RANKING_DATA = [
+  { code: "S-01", name: "Sanli", country: "China", buyer: "Decathlon", consignments: 6, achievePct: 96.67, grade: "A" },
+  { code: "S-08", name: "Formosa BD (Knit)", country: "Bangladesh", buyer: "Decathlon", consignments: 6, achievePct: 96.42, grade: "A" },
+  { code: "S-03", name: "Well Dyeing", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 96, grade: "A" },
+  { code: "S-04", name: "Foshan", country: "Bangladesh", buyer: "Decathlon", consignments: 4, achievePct: 96, grade: "A" },
+  { code: "S-06", name: "Dry tex", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 96, grade: "A" },
+  { code: "S-11", name: "Taihua", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 96, grade: "A" },
+  { code: "S-12", name: "Texwell", country: "China", buyer: "Decathlon", consignments: 0, achievePct: 96, grade: "A" },
+  { code: "S-09", name: "Haren", country: "India", buyer: "Decathlon", consignments: 2, achievePct: 94, grade: "B" },
+  { code: "S-13", name: "Suntion", country: "China", buyer: "Decathlon", consignments: 2, achievePct: 94, grade: "B" },
+  { code: "S-10", name: "Grand Textile", country: "Vietnam", buyer: "Decathlon", consignments: 1, achievePct: 92, grade: "B" },
+  { code: "S-07", name: "Everest Th", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
+  { code: "S-14", name: "THT", country: "China", buyer: "Decathlon", consignments: 1, achievePct: null, grade: null },
+  { code: "S-15", name: "Deyong", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
+  { code: "S-16", name: "Impress Newtex", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
+  { code: "S-17", name: "Lipeng", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
+];
 
 /* ============================================================
    White theme tokens
@@ -187,6 +222,9 @@ const STATUS_LABELS = {
 
 const REQ_COLORS = { pending: T.gold, partial: T.slate, fulfilled: T.sage };
 const REQ_LABELS = { pending: "Pending", partial: "Partially Issued", fulfilled: "Fulfilled" };
+
+// Grade badge colors for the Supplier Ranking panel.
+const GRADE_COLORS = { A: T.sage, B: T.slate, C: T.gold, D: T.brick };
 
 const fmt = (v) => {
   const n = Number(v);
@@ -317,6 +355,103 @@ function PieLegendList({ data, colorMap, labelMap, total }) {
   );
 }
 
+// NEW: Supplier Ranking panel -- simple ranked list, sorted by
+// achievePct descending (nulls/N/A sink to the bottom). Each row shows
+// rank, supplier name + country, and a grade badge with the achieve %.
+function SupplierRanking({ suppliers }) {
+  const ranked = [...suppliers].sort((a, b) => {
+    if (a.achievePct == null && b.achievePct == null) return 0;
+    if (a.achievePct == null) return 1;
+    if (b.achievePct == null) return -1;
+    return b.achievePct - a.achievePct;
+  });
+
+  return (
+    <div className="supplier-scroll" style={{ height: "100%", overflowY: "auto", paddingRight: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {ranked.map((s, i) => {
+          const gradeColor = s.grade ? GRADE_COLORS[s.grade] || T.muted : T.muted;
+          return (
+            <div
+              key={s.code}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "7px 9px",
+                borderRadius: 7,
+                background: i < 3 ? "rgba(184,122,74,0.05)" : "transparent",
+                border: `1px solid ${i < 3 ? T.border : "transparent"}`,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: displayFont,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: i < 3 ? T.amber : T.muted,
+                  width: 20,
+                  textAlign: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {i + 1}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontFamily: bodyFont,
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    color: T.text,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                  title={s.name}
+                >
+                  {s.name}
+                </div>
+                <div style={{ fontFamily: monoFont, fontSize: 10.5, color: T.muted }}>
+                  {s.country} · {s.consignments} consignment{s.consignments === 1 ? "" : "s"}
+                </div>
+              </div>
+              <span
+                style={{
+                  fontFamily: monoFont,
+                  fontSize: 12.5,
+                  color: T.text,
+                  minWidth: 44,
+                  textAlign: "right",
+                  flexShrink: 0,
+                }}
+              >
+                {s.achievePct != null ? `${fmt(s.achievePct)}%` : "N/A"}
+              </span>
+              <span
+                style={{
+                  fontFamily: monoFont,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: gradeColor,
+                  borderRadius: 5,
+                  padding: "2px 7px",
+                  flexShrink: 0,
+                  minWidth: 20,
+                  textAlign: "center",
+                }}
+              >
+                {s.grade || "–"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ============================================================
    Main page
    ============================================================ */
@@ -427,6 +562,10 @@ export default function DashboardPage() {
         .itemcode-scroll::-webkit-scrollbar-track { background: ${T.border}; border-radius: 5px; }
         .itemcode-scroll::-webkit-scrollbar-thumb { background: ${T.slate}; border-radius: 5px; }
         .itemcode-scroll::-webkit-scrollbar-thumb:hover { background: #2a4a63; }
+        .supplier-scroll { scrollbar-color: ${T.amber} ${T.border}; scrollbar-width: thin; }
+        .supplier-scroll::-webkit-scrollbar { width: 7px; }
+        .supplier-scroll::-webkit-scrollbar-track { background: ${T.border}; border-radius: 5px; }
+        .supplier-scroll::-webkit-scrollbar-thumb { background: ${T.amber}; border-radius: 5px; }
         .date-picker { font-family: ${monoFont}; font-size: 12px; color: ${T.text}; background: #fff; border: 1px solid ${T.border}; border-radius: 6px; padding: 5px 9px; outline: none; }
         .date-picker:focus { border-color: ${T.amber}; }
       `}</style>
@@ -434,9 +573,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
         <div>
-          <div style={{ fontFamily: monoFont, fontSize: 10, letterSpacing: "0.14em", color: T.muted, textTransform: "uppercase", marginBottom: 2 }}>
+          {/* <div style={{ fontFamily: monoFont, fontSize: 10, letterSpacing: "0.14em", color: T.muted, textTransform: "uppercase", marginBottom: 2 }}>
             HKD Outdoor Innovations · Material Warehouse
-          </div>
+          </div> */}
           <div style={{ fontFamily: displayFont, fontSize: 20, fontWeight: 700, color: T.text }}>
             <em style={{ color: T.amber, fontStyle: "italic" }}>Overview</em>
           </div>
@@ -475,11 +614,11 @@ export default function DashboardPage() {
         <KpiCard icon={PackageSearch} label="Total Receiving" value={kpis.totalReceivingCount} unit="invoices" accent={T.slate} />
       </div>
 
-      {/* Charts row -- back to 4 equal-ish columns (panel/card sizes
-          unchanged) -- buyer bar, item-code bar, batch pie, requisition
-          pie. Only the BARS inside the two bar-chart panels were made
-          bigger (see barSize below), not the panels themselves. */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.3fr 0.85fr 0.85fr", gap: 10, flex: 1, minHeight: 0 }}>
+      {/* Charts row -- buyer bar, item-code bar, supplier ranking list,
+          batch pie, requisition pie. Only the BARS inside the two bar-chart
+          panels were made bigger (see barSize below), not the panels
+          themselves. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1.15fr 0.95fr 0.8fr 0.8fr", gap: 10, flex: 1, minHeight: 0 }}>
         {/* Buyer-wise Roll -- main VERTICAL bar chart (bars rise from the
             bottom, buyer names along the X axis), horizontally scrollable
             when there are many buyers. All-time totals, not date-filtered.
@@ -557,6 +696,22 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+        </Panel>
+
+        {/* NEW: Supplier Ranking -- ranked list from the monthly Supplier
+            Performance Evaluation sheet. Sorted by Achieve % (nulls/
+            #DIV/0! rows sink to the bottom, shown as "N/A"). Not
+            date-filtered -- it reflects the latest evaluation month. */}
+        <Panel
+          eyebrow="Suppliers · Aug 2026"
+          title="Supplier Ranking"
+          right={
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: monoFont, fontSize: 11, color: T.muted }}>
+              <Trophy size={12} color={T.amber} /> {SUPPLIER_RANKING_DATA.length}
+            </span>
+          }
+        >
+          <SupplierRanking suppliers={SUPPLIER_RANKING_DATA} />
         </Panel>
 
         {/* Batch status pie -- date-filtered to the selected date (via the

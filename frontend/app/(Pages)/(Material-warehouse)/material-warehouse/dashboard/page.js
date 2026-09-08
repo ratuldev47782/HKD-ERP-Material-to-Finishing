@@ -35,6 +35,13 @@
 // constant for a real fetch once one exists -- the panel itself doesn't
 // need to change, it just expects the same shape.
 //
+// AUTO-REFRESH: the dashboard silently re-fetches GET
+// /dashboard/buyer-overview every REFRESH_INTERVAL_MS (5s) so figures
+// stay current without a manual reload. Only the FIRST load for a given
+// selectedDate shows the "Updating…" indicator / dummy-data seed;
+// subsequent 5s refreshes swap the data in quietly (no spinner flicker).
+// Changing the date clears the old interval and starts a fresh one.
+//
 // What's on screen, all at once, no scrolling:
 //   - 4 KPI cards (bigger now): Total Available Roll, Total Available Yds,
 //     Pending Inspection, Total Receiving
@@ -63,6 +70,9 @@ import {
 } from "recharts";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+// How often to silently re-fetch the dashboard data, in milliseconds.
+const REFRESH_INTERVAL_MS = 5000;
 
 // ============================================================
 // TEMP: frontend-only DUMMY DATA, used only as an initial placeholder so
@@ -466,13 +476,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId = null;
 
     // Seed with dummy shape immediately so every panel has something to
     // render on first paint.
     if (!data) setData(DUMMY_DATA);
-    setPieLoading(true);
 
-    (async () => {
+    // isFirstLoad -> true only for the very first fetch after mount / a
+    // date change, so the "Updating…" indicator only flashes once per
+    // date selection, not on every silent 5s poll.
+    const fetchDashboard = async (isFirstLoad) => {
+      if (isFirstLoad) setPieLoading(true);
       try {
         const res = await fetch(`${API_URL}/dashboard/buyer-overview?date=${selectedDate}`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to load dashboard data");
@@ -495,14 +509,27 @@ export default function DashboardPage() {
       } catch (err) {
         // Fetch failed -- keep whatever was already on screen rather than
         // blanking the whole dashboard, but surface the problem quietly
-        // in the console for debugging.
+        // in the console for debugging. This applies to background
+        // refreshes too: a transient failure on a 5s poll shouldn't wipe
+        // out good data already on screen.
         console.error("dashboard buyer-overview fetch failed:", err.message);
       } finally {
-        if (!cancelled) setPieLoading(false);
+        if (!cancelled && isFirstLoad) setPieLoading(false);
       }
-    })();
+    };
 
-    return () => { cancelled = true; };
+    // Initial load for this selectedDate.
+    fetchDashboard(true);
+
+    // Silent auto-refresh every REFRESH_INTERVAL_MS -- keeps KPIs, both
+    // bar charts, and both pies current without a manual reload or any
+    // loading-state flicker.
+    intervalId = setInterval(() => fetchDashboard(false), REFRESH_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 

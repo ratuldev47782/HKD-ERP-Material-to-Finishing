@@ -33,7 +33,7 @@
 // error message printed will show the real body shape it expects --
 // paste that back to me and I'll fix the script.
 
-const BASE_URL = process.env.API_URL || "http://192.169.8.98:5000";
+const BASE_URL = process.env.API_URL || "http://192.169.11.388:5000";
 const TODAY = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 const DEMO_BUYER = "Decathlon - Woven"; // change this if you want a different name
 

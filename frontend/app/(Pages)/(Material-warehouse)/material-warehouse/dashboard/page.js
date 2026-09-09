@@ -383,78 +383,81 @@ function SupplierRanking({ suppliers }) {
           const gradeColor = s.grade ? GRADE_COLORS[s.grade] || T.muted : T.muted;
           return (
             <div
-              key={s.code}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "7px 9px",
-                borderRadius: 7,
-                background: i < 3 ? "rgba(184,122,74,0.05)" : "transparent",
-                border: `1px solid ${i < 3 ? T.border : "transparent"}`,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: displayFont,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: i < 3 ? T.amber : T.muted,
-                  width: 20,
-                  textAlign: "center",
-                  flexShrink: 0,
-                }}
-              >
-                {i + 1}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontFamily: bodyFont,
-                    fontSize: 13.5,
-                    fontWeight: 600,
-                    color: T.text,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                  title={s.name}
-                >
-                  {s.name}
-                </div>
-                <div style={{ fontFamily: monoFont, fontSize: 10.5, color: T.muted }}>
-                  {s.country} · {s.consignments} consignment{s.consignments === 1 ? "" : "s"}
-                </div>
-              </div>
-              <span
-                style={{
-                  fontFamily: monoFont,
-                  fontSize: 12.5,
-                  color: T.text,
-                  minWidth: 44,
-                  textAlign: "right",
-                  flexShrink: 0,
-                }}
-              >
-                {s.achievePct != null ? `${fmt(s.achievePct)}%` : "N/A"}
-              </span>
-              <span
-                style={{
-                  fontFamily: monoFont,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#fff",
-                  background: gradeColor,
-                  borderRadius: 5,
-                  padding: "2px 7px",
-                  flexShrink: 0,
-                  minWidth: 20,
-                  textAlign: "center",
-                }}
-              >
-                {s.grade || "–"}
-              </span>
-            </div>
+  key={s.code}
+  style={{
+    display: "flex",
+    alignItems: "flex-start",   // center থেকে flex-start, কারণ নাম এখন একাধিক লাইনে যেতে পারে
+    gap: 10,
+    padding: "7px 9px",
+    borderRadius: 7,
+    background: i < 3 ? "rgba(184,122,74,0.05)" : "transparent",
+    border: `1px solid ${i < 3 ? T.border : "transparent"}`,
+  }}
+>
+  <span
+    style={{
+      fontFamily: displayFont,
+      fontSize: 15,
+      fontWeight: 700,
+      color: i < 3 ? T.amber : T.muted,
+      width: 20,
+      textAlign: "center",
+      flexShrink: 0,
+      paddingTop: 1,           // rank সংখ্যাটা নামের প্রথম লাইনের সাথে align থাকার জন্য
+    }}
+  >
+    {i + 1}
+  </span>
+  <div style={{ flex: 1, minWidth: 0 }}>
+    <div
+      style={{
+        fontFamily: bodyFont,
+        fontSize: 13.5,
+        fontWeight: 600,
+        color: T.text,
+        whiteSpace: "normal",     // nowrap বাদ
+        wordBreak: "break-word",  // লম্বা নাম হলেও wrap হবে
+        lineHeight: 1.25,
+      }}
+      // title আর দরকার নেই যেহেতু পুরো নামই দেখা যাচ্ছে, কিন্তু রেখে দিলে ক্ষতি নেই
+      title={s.name}
+    >
+      {s.name}
+    </div>
+    <div style={{ fontFamily: monoFont, fontSize: 10.5, color: T.muted }}>
+      {s.country} · {s.consignments} consignment{s.consignments === 1 ? "" : "s"}
+    </div>
+  </div>
+  <span
+    style={{
+      fontFamily: monoFont,
+      fontSize: 12.5,
+      color: T.text,
+      minWidth: 44,
+      textAlign: "right",
+      flexShrink: 0,
+      paddingTop: 1,
+    }}
+  >
+    {s.achievePct != null ? `${fmt(s.achievePct)}%` : "N/A"}
+  </span>
+  <span
+    style={{
+      fontFamily: monoFont,
+      fontSize: 11,
+      fontWeight: 600,
+      color: "#fff",
+      background: gradeColor,
+      borderRadius: 5,
+      padding: "2px 7px",
+      flexShrink: 0,
+      minWidth: 20,
+      textAlign: "center",
+    }}
+  >
+    {s.grade || "–"}
+  </span>
+</div>
           );
         })}
       </div>
@@ -672,8 +675,8 @@ export default function DashboardPage() {
                       axisLine={{ stroke: T.border }}
                       tickLine={false}
                       interval={0}
-                      // No tickFormatter here on purpose -- buyer names must
-                      // always render in full, never truncated with "…".
+                    // No tickFormatter here on purpose -- buyer names must
+                    // always render in full, never truncated with "…".
                     />
                     <YAxis type="number" tick={{ fill: T.muted, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={44} />
                     <Tooltip content={<CustomTooltip unit=" roll" />} cursor={{ fill: "rgba(184,122,74,0.06)" }} />

@@ -75,9 +75,15 @@ export const dashboardOverview = async (req, res) => {
     const totalAvailableYds = locations.reduce((s, l) => s + Number(l.availableYds), 0);
     const totalAvailableRoll = locations.reduce((s, l) => s + Number(l.availableRoll), 0);
     const pendingInspectionCount = items.filter((i) => i.status === "pending_inspection").length;
-    // Total number of Material Receive (invoice) records ever created,
-    // regardless of current status.
-    const totalReceivingCount = receives.length;
+    // Total number of DISTINCT invoice numbers ever received. One invoice
+    // (invoiceNo) can produce multiple materialReceives rows -- e.g. the
+    // same invoice re-entered across item codes/colors, or edited/split
+    // over time -- so counting raw rows overcounts the true invoice count.
+    // We count unique invoiceNo values instead so this reflects "how many
+    // distinct invoices" rather than "how many Material Receive rows".
+    const totalReceivingCount = new Set(
+      receives.map((r) => r.invoiceNo).filter(Boolean)
+    ).size;
 
     // ---------------- Available stock by Buyer (all-time) ----------------
     // via location -> its batch -> that batch's parent Receive.buyer

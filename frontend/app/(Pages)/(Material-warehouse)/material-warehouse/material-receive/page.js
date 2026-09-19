@@ -1,8 +1,34 @@
 // frontend/app/(Pages)/(Material-warehouse)/material-warehouse/material-receive/page.js
+//
+// THEME + RESPONSIVE UPDATE
+// -------------------------
+// Restyled to match the rest of the ERP (Material Stock / Style Register /
+// Material Inspection): blue #3B9ED4 accent, #F0F4F8 page background, white
+// rounded-xl cards with gray-200 borders, icon-square top bar, light-blue
+// (#C8E3F5) table headers with #EEF6FC zebra rows. The old brown/orange
+// palette and all dark-mode classes were removed.
+//
+// Responsive behaviour:
+//   - Below `lg` (1024px) the form and the Saved Records table STACK
+//     (form on top, full width) instead of sitting side by side. From `lg`
+//     up it's the same side-by-side layout as before (340px sticky form +
+//     records panel with its own scroll region).
+//   - The "Items under Invoice X" drawer shows as stacked cards below `lg`
+//     and as the full sub-table from `lg` up. On small screens the drawer is
+//     pinned to the left edge (sticky) and limited to the viewport width, so
+//     you never have to scroll sideways to reach the Rack Assignment form.
+//   - Saved Records table keeps all columns (scrolls horizontally inside its
+//     own strip, Column picker still works). Filters scroll horizontally.
+//   - Top bar, pagination bar and buttons wrap / shrink on phones.
+//
+// All data logic, API calls and behaviour are unchanged.
 
 "use client";
 
-import { Check, ChevronDown, ChevronUp, MapPin, PackageSearch, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  Check, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp,
+  Info, MapPin, PackageSearch, Pencil, Plus, Search, SlidersHorizontal, Trash2, X,
+} from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useReactTable,
@@ -13,42 +39,72 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 /* ============================================================
-   Shared style tokens (warm HKD theme, Tailwind-only)
-   -- compact / table-like sizing --
+   Theme (matches Material Stock / Style Register)
    ============================================================ */
 
-const card = "bg-[#f7f5f0] dark:bg-[#221d16] border border-[#2c2417]/10 dark:border-[#e8ddd0]/10 rounded-xl shadow-sm";
+const BLUE = "#3B9ED4";
+const BLUE_DARK = "#2E8EC4";
+const BLUE_HDR = "#C8E3F5";   // table header bg
+const BLUE_ROW = "#EEF6FC";   // zebra row / soft panel bg
+const BLUE_FAINT = "#DBEEFF"; // hover
+const BORDER_CLR = "#D1E4F0";
+const PAGE_BG = "#F0F4F8";
+
+// NOTE: every Tailwind color below is a literal class name (no template
+// interpolation) so Tailwind's compiler can see it.
+const card = "bg-white rounded-xl border border-gray-200 shadow-sm";
+
+// Main form inputs: comfortable size on phones/tablets, compact from lg up
+// (where the form is a 340px column).
 const inputCls =
-  "w-full rounded-md border-[1.5px] border-[#2c2417]/25 dark:border-[#e8ddd0]/25 bg-white dark:bg-[#2a241b] px-2.5 py-1.5 text-xs text-[#2c2417] dark:text-[#e8ddd0] placeholder:text-[#a08060] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#b87a4a]/30 focus:border-[#b87a4a] dark:focus:border-[#d4955e] transition-colors";
+  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm lg:px-2.5 lg:py-1.5 lg:text-xs text-gray-800 " +
+  "placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 " +
+  "focus:ring-[#3B9ED4]/25 focus:border-[#3B9ED4] transition-all duration-150";
+
+// Compact inputs for nested rows, tables and filters.
+const inputSm =
+  "w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-800 " +
+  "placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 " +
+  "focus:ring-[#3B9ED4]/25 focus:border-[#3B9ED4] transition-all duration-150";
+
 const btnPrimary =
-  "inline-flex items-center gap-1.5 rounded-full bg-[#2c2417] dark:bg-[#e8ddd0] text-[#f0ede6] dark:text-[#1b1712] text-xs font-medium px-4 py-2 hover:bg-[#b87a4a] dark:hover:bg-[#d4955e] transition-colors disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#3B9ED4] hover:bg-[#2E8EC4] text-white " +
+  "text-sm font-semibold px-4 py-2.5 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none";
+
 const btnSecondary =
-  "inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#2c2417]/25 dark:border-[#e8ddd0]/25 bg-white dark:bg-[#2a241b] text-[#7a6250] dark:text-[#a8917d] text-xs font-medium px-3 py-1.5 hover:border-[#b87a4a] hover:text-[#b87a4a] dark:hover:border-[#d4955e] dark:hover:text-[#d4955e] transition-colors disabled:opacity-40 disabled:pointer-events-none";
-const label = "block mb-1 text-[11px] font-medium tracking-wide text-[#7a6250] dark:text-[#a8917d]";
-const chip = "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#b87a4a]/12 text-[#8a4a24] dark:bg-[#d4955e]/15 dark:text-[#d4955e]";
-const chipPending = "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#b8933a]/15 text-[#8a6a1a] dark:bg-[#e0c068]/15 dark:text-[#e0c068]";
-const chipPartial = "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#3d6a8a]/15 text-[#2c4a63] dark:bg-[#6fa8d0]/15 dark:text-[#6fa8d0]";
-const chipApproved = "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#5ca068]/15 text-[#3d7a4a] dark:bg-[#8fca9c]/15 dark:text-[#8fca9c]";
-// NEW: two extra statuses introduced by the Material Inspection workflow --
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white " +
+  "text-gray-600 text-sm font-medium px-3 py-2 hover:border-[#3B9ED4] " +
+  "hover:text-[#3B9ED4] transition-colors disabled:opacity-40 disabled:pointer-events-none";
+
+const btnIcon =
+  "inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white " +
+  "text-gray-500 w-8 h-8 hover:border-[#3B9ED4] hover:text-[#3B9ED4] " +
+  "transition-colors disabled:opacity-30 disabled:pointer-events-none";
+
+const labelCls = "block mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400";
+
+// Chips
+const chipBase = "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap";
+const chip = `${chipBase} bg-[#3B9ED4]/10 text-[#2E8EC4]`;
+const chipPending = `${chipBase} bg-amber-50 text-amber-700`;
+const chipPartial = `${chipBase} bg-sky-50 text-sky-700`;
+const chipApproved = `${chipBase} bg-green-50 text-green-700`;
+// Two extra statuses introduced by the Material Inspection workflow --
 // "pending_inspection" (just received, not looked at yet) and "rejected"
 // (inspection passed 0 Roll / 0 Yds).
-const chipInspection = "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#7a4a8a]/15 text-[#5c3468] dark:bg-[#c68fd4]/15 dark:text-[#c68fd4]";
-const chipRejected = "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#a04a3a]/15 text-[#7a3325] dark:bg-[#e08a78]/15 dark:text-[#e08a78]";
+const chipInspection = `${chipBase} bg-purple-50 text-purple-700`;
+const chipRejected = `${chipBase} bg-red-50 text-red-700`;
 
-// Thin, theme-matching scrollbar (webkit + firefox) instead of the browser's
-// default fat gray one. Applied to every independently-scrolling region so
-// each region's scroll is visually distinct from a page-level scroll.
+// Thin scrollbar in the ERP's blue-grey, applied to every independently
+// scrolling region.
 const scrollThin =
   "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent " +
-  "[&::-webkit-scrollbar-thumb]:bg-[#b87a4a]/30 [&::-webkit-scrollbar-thumb]:rounded-full " +
-  "[&::-webkit-scrollbar-thumb:hover]:bg-[#b87a4a]/50 " +
-  "[scrollbar-width:thin] [scrollbar-color:#b87a4a4d_transparent]";
+  "[&::-webkit-scrollbar-thumb]:bg-[#c8d9e8] [&::-webkit-scrollbar-thumb]:rounded-full " +
+  "[&::-webkit-scrollbar-thumb:hover]:bg-[#9ab8cc] " +
+  "[scrollbar-width:thin] [scrollbar-color:#c8d9e8_transparent]";
 
-// Same scroll region, but the bar itself is fully hidden (Chrome/Safari via
-// ::-webkit-scrollbar, Firefox via scrollbar-width, old Edge/IE via
-// -ms-overflow-style). Scrolling still works with wheel/trackpad/touch/
-// keyboard -- only the visual track+thumb disappear. Used on the form
-// column, where a bar looked cluttered next to the compact 340px card.
+// Same scroll region, but the bar itself is fully hidden. Scrolling still
+// works with wheel/trackpad/touch/keyboard. Used on the form column.
 const scrollHidden =
   "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
@@ -141,8 +197,8 @@ function loadColumnVisibility() {
 
 function Field({ text, required, children }) {
   return (
-    <label className="block text-xs">
-      <span className={label}>{text} {required && <span className="text-[#b87a4a]">*</span>}</span>
+    <label className="block">
+      <span className={labelCls}>{text} {required && <span className="text-red-500">*</span>}</span>
       {children}
     </label>
   );
@@ -170,19 +226,19 @@ function statusChip(status) {
 function StyleModelRows({ rows, onAdd, onRemove, onChange }) {
   return (
     <div className="space-y-1.5">
-      {rows.map((row, i) => (
-        <div key={row.key} className="bg-white dark:bg-[#2a241b] border border-[#2c2417]/8 dark:border-[#e8ddd0]/8 rounded-md p-1.5 grid grid-cols-2 gap-1.5">
-          <input type="text" placeholder="Style" value={row.style} onChange={(e) => onChange(row.key, "style", up(e.target.value))} className={inputCls} />
+      {rows.map((row) => (
+        <div key={row.key} className="bg-white border border-gray-200 rounded-lg p-1.5 grid grid-cols-2 gap-1.5">
+          <input type="text" placeholder="Style" value={row.style} onChange={(e) => onChange(row.key, "style", up(e.target.value))} className={inputSm} />
           <div className="flex items-center gap-1.5">
-            <input type="text" placeholder="Model" value={row.model} onChange={(e) => onChange(row.key, "model", up(e.target.value))} className={`${inputCls} flex-1`} />
+            <input type="text" placeholder="Model" value={row.model} onChange={(e) => onChange(row.key, "model", up(e.target.value))} className={`${inputSm} flex-1 min-w-0`} />
             {rows.length > 1 && (
-              <button type="button" onClick={() => onRemove(row.key)} className="text-[10px] font-medium text-[#b87a4a] hover:underline shrink-0">×</button>
+              <button type="button" onClick={() => onRemove(row.key)} className="text-base leading-none font-medium text-red-500 hover:text-red-700 shrink-0 px-1" aria-label="Remove style">×</button>
             )}
           </div>
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="inline-flex items-center gap-1 text-[10px] font-medium text-[#b87a4a] dark:text-[#d4955e] hover:underline">
-        <Plus size={11} /> Add Style
+      <button type="button" onClick={onAdd} className="inline-flex items-center gap-1 text-[11px] font-semibold hover:underline" style={{ color: BLUE }}>
+        <Plus size={12} /> Add Style
       </button>
     </div>
   );
@@ -197,7 +253,7 @@ function StyleModelRows({ rows, onAdd, onRemove, onChange }) {
 
 function StockPreview({ preview }) {
   if (!preview?.length) {
-    return <div className="text-[11px] italic text-[#a08060] px-1 py-1">No existing stock found for this Item Code/PDM + Color.</div>;
+    return <div className="text-[11px] italic text-gray-400 px-1 py-1">No existing stock found for this Item Code/PDM + Color.</div>;
   }
 
   const byRack = preview.reduce((acc, r) => {
@@ -214,12 +270,12 @@ function StockPreview({ preview }) {
         const totalRoll = rows.reduce((s, r) => s + Number(r.availableRoll || 0), 0);
         const totalYds = rows.reduce((s, r) => s + Number(r.availableYds || 0), 0);
         return (
-          <div key={rack} className="rounded-lg border border-[#b87a4a]/30 dark:border-[#d4955e]/30 overflow-hidden">
-            <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#b87a4a]/12 dark:bg-[#d4955e]/12">
-              <span className="flex items-center gap-1 text-xs font-bold text-[#8a4a24] dark:text-[#d4955e]">
+          <div key={rack} className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: BORDER_CLR }}>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-2.5 py-1.5" style={{ background: BLUE_ROW }}>
+              <span className="flex items-center gap-1 text-xs font-bold" style={{ color: BLUE_DARK }}>
                 <MapPin size={13} /> {rack}
               </span>
-              <span className="text-xs font-bold text-[#8a4a24] dark:text-[#d4955e]">
+              <span className="text-xs font-bold" style={{ color: BLUE_DARK }}>
                 {totalRoll} Roll · {totalYds} Yds
               </span>
             </div>
@@ -229,15 +285,15 @@ function StockPreview({ preview }) {
                   <tr
                     key={r.itemId}
                     title={`Invoice ${r.invoiceNo}`}
-                    className="border-t border-[#b87a4a]/10 dark:border-[#d4955e]/10"
+                    className="border-t border-gray-100"
                   >
-                    <td className="px-2.5 py-1.5 text-[#7a6250] dark:text-[#a8917d] whitespace-nowrap">
+                    <td className="px-2.5 py-1.5 text-gray-500 whitespace-nowrap">
                       {r.date?.slice(0, 10)}
                     </td>
-                    <td className="px-2.5 py-1.5 text-right font-semibold text-[#2c2417] dark:text-[#e8ddd0] whitespace-nowrap">
+                    <td className="px-2.5 py-1.5 text-right font-semibold text-gray-800 whitespace-nowrap">
                       {r.availableRoll} Roll
                     </td>
-                    <td className="px-2.5 py-1.5 text-right font-semibold text-[#2c2417] dark:text-[#e8ddd0] whitespace-nowrap">
+                    <td className="px-2.5 py-1.5 text-right font-semibold text-gray-800 whitespace-nowrap">
                       {r.availableYds} Yds
                     </td>
                   </tr>
@@ -252,10 +308,10 @@ function StockPreview({ preview }) {
 }
 
 /* ============================================================
-  ColorRow -- Color/Fabric Details/Roll/Yds inputs, plus a live
+   ColorRow -- Color/Fabric Details/Roll/Yds inputs, plus a live
    "already in stock" preview (Rack + Date + Qty) for this exact
    Item Code/PDM + Color, pulled from Available Stock as the user
-  types. Fabric Details is REQUIRED and does not affect the stock
+   types. Fabric Details is REQUIRED and does not affect the stock
    lookup (which is keyed on Item Code/PDM + Color only).
    ============================================================ */
 
@@ -298,11 +354,11 @@ function ColorRow({ itemCodePdm, color, canRemove, onRemove, onChange }) {
   }, [itemCodePdm, color.color]);
 
   return (
-    <div className="bg-white dark:bg-[#2a241b] border border-[#2c2417]/8 dark:border-[#e8ddd0]/8 rounded-md p-1.5 space-y-1">
+    <div className="bg-white border border-gray-200 rounded-lg p-2 space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <input type="text" placeholder="Color" value={color.color} onChange={(e) => onChange(color.key, "color", up(e.target.value))} className={`${inputCls} flex-1`} />
+        <input type="text" placeholder="Color" value={color.color} onChange={(e) => onChange(color.key, "color", up(e.target.value))} className={`${inputSm} flex-1 min-w-0`} />
         {canRemove && (
-          <button type="button" onClick={() => onRemove(color.key)} className="text-[10px] font-medium text-[#b87a4a] hover:underline shrink-0">
+          <button type="button" onClick={() => onRemove(color.key)} className="text-base leading-none font-medium text-red-500 hover:text-red-700 shrink-0 px-1" aria-label="Remove color">
             ×
           </button>
         )}
@@ -313,19 +369,19 @@ function ColorRow({ itemCodePdm, color, canRemove, onRemove, onChange }) {
         placeholder="Fabric Details *"
         value={color.fabricDetails}
         onChange={(e) => onChange(color.key, "fabricDetails", up(e.target.value))}
-        className={inputCls}
+        className={inputSm}
       />
       <div className="grid grid-cols-2 gap-1.5">
-        <input type="number" placeholder="Roll" value={color.roll} onChange={(e) => onChange(color.key, "roll", e.target.value)} className={inputCls} />
-        <input type="number" placeholder="Yds" value={color.yds} onChange={(e) => onChange(color.key, "yds", e.target.value)} className={inputCls} />
+        <input type="number" placeholder="Roll" value={color.roll} onChange={(e) => onChange(color.key, "roll", e.target.value)} className={inputSm} />
+        <input type="number" placeholder="Yds" value={color.yds} onChange={(e) => onChange(color.key, "yds", e.target.value)} className={inputSm} />
       </div>
 
       {loadingPreview && (
-        <div className="text-[10px] text-[#a08060] italic">Checking existing stock...</div>
+        <div className="text-[10px] text-gray-400 italic">Checking existing stock...</div>
       )}
       {!loadingPreview && hasSearched && (
         <div className="pt-1 space-y-1.5">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7a6250] dark:text-[#a8917d]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
             Already in Stock
           </div>
           <StockPreview preview={preview} />
@@ -341,15 +397,15 @@ function ColorRow({ itemCodePdm, color, canRemove, onRemove, onChange }) {
 
 function ItemCodeCard({ itemCode, index, canRemove, onNameChange, onRemove, onAddColor, onRemoveColor, onColorChange }) {
   return (
-    <div className={`${card} p-2 space-y-1.5`}>
+    <div className="rounded-xl border p-2 space-y-2" style={{ background: BLUE_ROW, borderColor: BORDER_CLR }}>
       <div className="flex items-center gap-1.5">
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#b87a4a]/15 text-[#b87a4a] dark:bg-[#d4955e]/15 dark:text-[#d4955e] text-[10px] font-semibold">
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: BLUE }}>
           {index + 1}
         </span>
         <input type="text" placeholder="Item Code / PDM" value={itemCode.itemCodePdm}
-          onChange={(e) => onNameChange(up(e.target.value))} className={`${inputCls} flex-1`} />
+          onChange={(e) => onNameChange(up(e.target.value))} className={`${inputSm} flex-1 min-w-0`} />
         {canRemove && (
-          <button type="button" onClick={onRemove} className="text-[10px] font-medium text-[#b87a4a] hover:underline shrink-0">
+          <button type="button" onClick={onRemove} className="text-[11px] font-semibold text-red-500 hover:text-red-700 hover:underline shrink-0">
             Remove
           </button>
         )}
@@ -368,8 +424,8 @@ function ItemCodeCard({ itemCode, index, canRemove, onNameChange, onRemove, onAd
         ))}
       </div>
 
-      <button type="button" onClick={onAddColor} className="inline-flex items-center gap-1 text-[10px] font-medium text-[#b87a4a] dark:text-[#d4955e] hover:underline">
-        <Plus size={11} /> Add Color
+      <button type="button" onClick={onAddColor} className="inline-flex items-center gap-1 text-[11px] font-semibold hover:underline" style={{ color: BLUE }}>
+        <Plus size={12} /> Add Color
       </button>
     </div>
   );
@@ -388,7 +444,7 @@ function AllocationList({ locations, onSaveEdit, onDelete, busyId }) {
   const [draft, setDraft] = useState({ location: "", roll: "", yds: "" });
 
   if (!locations?.length) {
-    return <div className="text-[10px] italic text-[#a08060]">No rack assigned yet.</div>;
+    return <div className="text-[10px] italic text-gray-400">No rack assigned yet.</div>;
   }
 
   const startEdit = (loc) => {
@@ -407,43 +463,40 @@ function AllocationList({ locations, onSaveEdit, onDelete, busyId }) {
         const locked = Number(loc.availableRoll) !== Number(loc.rollQty) || Number(loc.availableYds) !== Number(loc.yds);
         const isEditing = editingId === loc.id;
         return (
-          <div key={loc.id} className="flex items-center gap-1.5 bg-white dark:bg-[#2a241b] border border-[#2c4a63]/15 dark:border-[#6fa8d0]/15 rounded-md px-2 py-1">
+          <div key={loc.id} className="flex flex-wrap items-center gap-x-1.5 gap-y-1 bg-white border rounded-lg px-2 py-1.5" style={{ borderColor: BORDER_CLR }}>
             {isEditing ? (
-              <div className="w-full space-y-1">
-                {/* Rack select on its own full-width row -- on narrow
-                    screens, squeezing this into a row alongside two
-                    number inputs and two icon buttons left almost no
-                    width for it, so it rendered as just the browser's
-                    dropdown arrow with the selected rack name invisible. */}
+              <div className="w-full space-y-1.5">
+                {/* Rack select on its own full-width row so the selected
+                    rack name is always visible on narrow screens. */}
                 <div className="relative">
-                  <MapPin size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#3d6a8a] dark:text-[#6fa8d0] pointer-events-none" />
+                  <MapPin size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: BLUE }} />
                   <select
                     value={draft.location}
                     onChange={(e) => setDraft((p) => ({ ...p, location: e.target.value }))}
-                    className={`${inputCls} !py-1 w-full !pl-6 font-semibold text-[#2c4a63] dark:text-[#6fa8d0]`}
+                    className={`${inputSm} w-full !pl-6 font-semibold`}
                   >
                     {RACK_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <input type="number" value={draft.roll} onChange={(e) => setDraft((p) => ({ ...p, roll: e.target.value }))} placeholder="Roll" className={`${inputCls} !py-1 flex-1`} />
-                  <input type="number" value={draft.yds} onChange={(e) => setDraft((p) => ({ ...p, yds: e.target.value }))} placeholder="Yds" className={`${inputCls} !py-1 flex-1`} />
-                  <button type="button" onClick={() => saveEdit(loc.id)} disabled={busyId === loc.id} className="text-[#3d7a4a] hover:opacity-70 shrink-0"><Check size={15} /></button>
-                  <button type="button" onClick={() => setEditingId(null)} className="text-[#a04a3a] hover:opacity-70 shrink-0"><X size={15} /></button>
+                  <input type="number" value={draft.roll} onChange={(e) => setDraft((p) => ({ ...p, roll: e.target.value }))} placeholder="Roll" className={`${inputSm} flex-1 min-w-0`} />
+                  <input type="number" value={draft.yds} onChange={(e) => setDraft((p) => ({ ...p, yds: e.target.value }))} placeholder="Yds" className={`${inputSm} flex-1 min-w-0`} />
+                  <button type="button" onClick={() => saveEdit(loc.id)} disabled={busyId === loc.id} className="text-green-600 hover:opacity-70 shrink-0 p-1" aria-label="Save"><Check size={16} /></button>
+                  <button type="button" onClick={() => setEditingId(null)} className="text-red-500 hover:opacity-70 shrink-0 p-1" aria-label="Cancel"><X size={16} /></button>
                 </div>
               </div>
             ) : (
               <>
-                <MapPin size={11} className="text-[#3d6a8a] dark:text-[#6fa8d0] shrink-0" />
-                <span className="font-semibold text-[#2c4a63] dark:text-[#6fa8d0] text-[11px]">{loc.location}</span>
-                <span className="text-[11px] text-[#2c2417] dark:text-[#e8ddd0] flex-1">
+                <MapPin size={11} className="shrink-0" style={{ color: BLUE }} />
+                <span className="font-bold text-[11px]" style={{ color: BLUE_DARK }}>{loc.location}</span>
+                <span className="text-[11px] text-gray-700 flex-1 min-w-0">
                   {loc.rollQty} Roll · {loc.yds} Yds
-                  {locked && <span className="text-[9px] italic text-[#a08060] ml-1">(issued, locked)</span>}
+                  {locked && <span className="text-[9px] italic text-gray-400 ml-1">(issued, locked)</span>}
                 </span>
                 {!locked && (
                   <>
-                    <button type="button" onClick={() => startEdit(loc)} className="text-[#3d6a8a] dark:text-[#6fa8d0] hover:underline text-[10px] font-medium shrink-0">Edit</button>
-                    <button type="button" onClick={() => onDelete(loc.id)} disabled={busyId === loc.id} className="text-[#a04a3a] hover:underline text-[10px] font-medium shrink-0">Remove</button>
+                    <button type="button" onClick={() => startEdit(loc)} className="hover:underline text-[11px] font-semibold shrink-0" style={{ color: BLUE }}>Edit</button>
+                    <button type="button" onClick={() => onDelete(loc.id)} disabled={busyId === loc.id} className="text-red-500 hover:underline text-[11px] font-semibold shrink-0">Remove</button>
                   </>
                 )}
               </>
@@ -456,34 +509,32 @@ function AllocationList({ locations, onSaveEdit, onDelete, busyId }) {
 }
 
 /* ============================================================
-   Item Code / Color breakdown -- real sub-table, with inline
-   MULTI-RACK Location/Rack assignment for pending/partial rows:
-   each row shows its existing per-rack allocations (editable /
-   removable) plus a form to assign more of whatever's still
-   unassigned, so one batch (e.g. 100 Roll) can be split across
-   several racks (e.g. 70 -> Rack-1, 30 -> Rack-2). Also keeps the
-   "search before assign" toggle that shows where this exact Item
-   Code/PDM + Color already sits (Rack + Date-wise) before you
-   commit to a rack.
+   Item Code / Color breakdown -- with inline MULTI-RACK
+   Location/Rack assignment for pending/partial rows: each row shows
+   its existing per-rack allocations (editable / removable) plus a
+   form to assign more of whatever's still unassigned, so one batch
+   (e.g. 100 Roll) can be split across several racks (e.g. 70 ->
+   Rack-1, 30 -> Rack-2). Also keeps the "search before assign"
+   toggle that shows where this exact Item Code/PDM + Color already
+   sits (Rack + Date-wise) before you commit to a rack.
 
-  Fabric Details is shown as its own read-only column here (it's
-   entered once on Material Receive and never edited from this
-   drawer).
+   Fabric Details is shown read-only here (it's entered once on
+   Material Receive and never edited from this drawer).
 
-   A batch now sits in one of FIVE statuses instead of three --
-   "pending_inspection" (Material Inspection hasn't looked at it
-   yet) and "rejected" (inspection passed 0/0) are both dead ends
-   here: the Rack Assignment form is hidden and a short explanatory
-   note is shown instead, since Location Assignment can never place
-   stock that hasn't passed inspection.
+   A batch sits in one of FIVE statuses -- "pending_inspection"
+   (Material Inspection hasn't looked at it yet) and "rejected"
+   (inspection passed 0/0) are both dead ends here: the Rack
+   Assignment form is hidden and a short explanatory note is shown
+   instead, since Location Assignment can never place stock that
+   hasn't passed inspection.
 
-   Rendered as a distinct blue/slate "drawer" panel (not the page's
-   orange/brown palette) with a left accent border + margin + shadow,
-   so it's immediately obvious this whole block is the "Items under
-   Invoice X" expansion and NOT just another striped table row.
+   RESPONSIVE: below `lg` each batch renders as a stacked card;
+   from `lg` up it's the full sub-table. The whole drawer is pinned
+   to the left edge and limited to the viewport width on small
+   screens (sticky + width calc), because it sits inside a wide,
+   horizontally-scrollable parent table.
 
-   NOTE: colSpan is 14 here to match the parent Saved Records table,
-   which now has 14 columns after the Supplier column was added.
+   NOTE: colSpan is 14 to match the parent Saved Records table.
    ============================================================ */
 
 function ItemsBreakdownTable({ invoiceNo, items, onAssigned }) {
@@ -495,7 +546,7 @@ function ItemsBreakdownTable({ invoiceNo, items, onAssigned }) {
   const [previewLoadingId, setPreviewLoadingId] = useState(null);
 
   if (!items?.length) {
-    return <tr><td colSpan={14} className="px-3 py-2 text-[11px] italic text-[#a08060]">No item code / color rows found.</td></tr>;
+    return <tr><td colSpan={14} className="px-3 py-2 text-[11px] italic text-gray-400">No item code / color rows found.</td></tr>;
   }
 
   const getDraft = (itemId) => newAlloc[itemId] || { location: RACK_OPTIONS[0], roll: "", yds: "" };
@@ -565,173 +616,229 @@ function ItemsBreakdownTable({ invoiceNo, items, onAssigned }) {
     }
   };
 
+  /* ---- shared render helpers (used by BOTH the card and table layouts) ---- */
+
+  const passedInfo = (row) =>
+    row.status === "pending_inspection" ? (
+      <span className="italic text-gray-400">not inspected</span>
+    ) : (
+      <>
+        <span className="text-green-600 font-semibold">{row.passedRoll} Roll / {row.passedYds} Yds</span>
+        {Number(row.rejectedRoll) > 0 || Number(row.rejectedYds) > 0 ? (
+          <span className="block text-red-600">{row.rejectedRoll} Roll / {row.rejectedYds} Yds rejected</span>
+        ) : null}
+      </>
+    );
+
+  const previewBody = (row) =>
+    previewLoadingId === row.id ? (
+      <div className="text-[11px] text-gray-400 italic">Checking existing stock...</div>
+    ) : (
+      <StockPreview preview={previewData[row.id] || []} />
+    );
+
+  const rackBlock = (row) => {
+    // Only "pending" / "partial" (i.e. batches that have PASSED Material
+    // Inspection and aren't fully racked yet) can be targeted for a new rack
+    // assignment. "pending_inspection" and "rejected" have nothing available
+    // to place; "approved" is already fully placed.
+    const isLocked = row.status === "approved" || row.status === "pending_inspection" || row.status === "rejected";
+    const previewOpen = openPreviewId === row.id;
+    const draft = getDraft(row.id);
+    return (
+      <div className="space-y-2">
+        {/* Existing rack allocations for this batch */}
+        <AllocationList
+          locations={row.locations}
+          onSaveEdit={handleSaveAllocationEdit}
+          onDelete={handleDeleteAllocation}
+          busyId={assigningId}
+        />
+
+        {/* Search-before-assign toggle */}
+        <button
+          type="button"
+          onClick={() => togglePreview(row)}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold hover:underline"
+          style={{ color: previewOpen ? BLUE_DARK : BLUE }}
+        >
+          <Search size={11} /> {previewOpen ? "Hide" : "Check"} existing stock
+        </button>
+
+        {/* Explanatory notes for the two "can't be assigned" states. */}
+        {row.status === "pending_inspection" && (
+          <div className="text-[10px] italic text-purple-700">
+            Awaiting Material Inspection approval before this batch can be racked.
+          </div>
+        )}
+        {row.status === "rejected" && (
+          <div className="text-[10px] italic text-red-600">
+            Rejected during inspection ({row.rejectedRoll} Roll / {row.rejectedYds} Yds) -- not available for stock.
+          </div>
+        )}
+
+        {/* Assign-more form, only while quantity remains unassigned */}
+        {!isLocked && (
+          <div className="space-y-1.5">
+            <label className="block">
+              <span className="block mb-0.5 text-[9px] font-bold uppercase tracking-wider text-gray-400">Rack</span>
+              <div className="relative">
+                <MapPin size={11} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: BLUE }} />
+                <select
+                  value={draft.location}
+                  onChange={(e) => setDraft(row.id, "location", e.target.value)}
+                  className={`${inputSm} w-full !pl-6 font-semibold`}
+                >
+                  {RACK_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+            </label>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number" placeholder="Roll" value={draft.roll}
+                onChange={(e) => setDraft(row.id, "roll", e.target.value)}
+                className={`${inputSm} flex-1 min-w-0`}
+              />
+              <input
+                type="number" placeholder="Yds" value={draft.yds}
+                onChange={(e) => setDraft(row.id, "yds", e.target.value)}
+                className={`${inputSm} flex-1 min-w-0`}
+              />
+              <button
+                type="button"
+                onClick={() => handleAssign(row)}
+                disabled={assigningId === row.id}
+                className="inline-flex items-center gap-1 rounded-lg bg-[#3B9ED4] hover:bg-[#2E8EC4] text-white text-xs font-semibold px-3 py-1.5 transition-colors disabled:opacity-50 shrink-0"
+              >
+                {assigningId === row.id ? "..." : "Assign"}
+              </button>
+            </div>
+            <div className="text-[10px] text-gray-400 leading-snug">
+              Up to {row.unassignedRoll} Roll / {row.unassignedYds} Yds left to place. Assign part of it to split across racks — assigning to a Rack that already holds this batch merges into that same Rack instead of creating a duplicate.
+            </div>
+          </div>
+        )}
+        {rowError[row.id] && <div className="text-[11px] text-red-600">{rowError[row.id]}</div>}
+      </div>
+    );
+  };
+
   return (
     <tr>
       <td colSpan={14} className="p-0">
-        {/* Distinct blue/slate "drawer" wrapper -- deliberately a different
-            color family from the orange/brown page theme, plus margin,
-            rounded corners, left accent border and an inner shadow, so it
-            reads as a nested panel sitting inside the row, not as another
-            plain table row in the Saved Records list. */}
-        <div className="mx-2 my-2 rounded-lg border-l-4 border-[#3d6a8a] dark:border-[#6fa8d0] bg-[#eef3f7] dark:bg-[#182530] shadow-inner overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#2c4a63] dark:bg-[#3d6a8a]">
-            <PackageSearch size={14} className="text-[#a8d0e8]" />
-            <span className="text-xs font-bold uppercase tracking-wide text-white">
-              Items under Invoice {invoiceNo}
-            </span>
-          </div>
-          <table className="min-w-full text-[11px]">
-            <thead>
-              <tr className="text-[#4a6578] dark:text-[#8fb0c4] border-b-2 border-[#3d6a8a]/20 dark:border-[#6fa8d0]/20 bg-[#dde8ef]/60 dark:bg-white/[0.03]">
-                <th className="px-3 py-2 text-left font-semibold w-1/5">Item Code / PDM</th>
-                <th className="px-3 py-2 text-left font-semibold">Color</th>
-                <th className="px-3 py-2 text-left font-semibold">Fabric Details</th>
-                <th className="px-3 py-2 text-left font-semibold">Received Roll/Yds</th>
-                <th className="px-3 py-2 text-left font-semibold">Passed / Rejected</th>
-                <th className="px-3 py-2 text-left font-semibold">Unassigned</th>
-                <th className="px-3 py-2 text-left font-semibold">Status</th>
-                <th className="px-3 py-2 text-left font-semibold w-96">Rack Assignment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((row, idx) => {
+        {/* Below lg: pinned to the left edge + capped to the viewport width so
+            the drawer never needs sideways scrolling. From lg up: normal. */}
+        <div className="sticky left-0 w-[calc(100vw-3.5rem)] lg:static lg:w-auto">
+          <div
+            className="mx-2 my-2 rounded-xl border overflow-hidden"
+            style={{ background: BLUE_ROW, borderColor: BORDER_CLR, borderLeft: `4px solid ${BLUE}` }}
+          >
+            <div className="flex items-center gap-2 px-3 py-2" style={{ background: BLUE }}>
+              <PackageSearch size={14} className="text-white shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wider text-white break-words min-w-0">
+                Items under Invoice {invoiceNo}
+              </span>
+            </div>
+
+            {/* ── Below lg: stacked cards ── */}
+            <div className="lg:hidden p-2.5 space-y-2.5">
+              {items.map((row) => {
                 const rowId = row.id ?? row.key ?? `${row.itemCodePdm}-${row.color}`;
-                // Only "pending" / "partial" (i.e. batches that have PASSED
-                // Material Inspection and aren't fully racked yet) can be
-                // targeted for a new rack assignment. "pending_inspection"
-                // and "rejected" have nothing available to place; "approved"
-                // is already fully placed.
-                const isLocked = row.status === "approved" || row.status === "pending_inspection" || row.status === "rejected";
-                const previewOpen = openPreviewId === row.id;
-                const draft = getDraft(row.id);
                 return (
-                  <Fragment key={rowId}>
-                    <tr className={`border-b border-[#3d6a8a]/10 dark:border-[#6fa8d0]/10 last:border-b-0 ${idx % 2 === 1 ? "bg-[#3d6a8a]/[0.04] dark:bg-[#6fa8d0]/[0.04]" : ""}`}>
-                      <td className="px-3 py-2 text-[#2c4a63] dark:text-[#8fb0c4] font-bold align-top">{row.itemCodePdm}</td>
-                      <td className="px-3 py-2 font-medium align-top">{row.color}</td>
-                      <td className="px-3 py-2 align-top">
-                        {row.fabricDetails || <span className="italic text-[#a08060]">-</span>}
-                      </td>
-                      <td className="px-3 py-2 align-top whitespace-nowrap">{row.rollQty} Roll / {row.yds} Yds</td>
-                      <td className="px-3 py-2 align-top whitespace-nowrap">
-                        {row.status === "pending_inspection" ? (
-                          <span className="italic text-[#a08060]">not inspected</span>
-                        ) : (
-                          <>
-                            <span className="text-[#3d7a4a] dark:text-[#8fca9c] font-semibold">{row.passedRoll} Roll / {row.passedYds} Yds</span>
-                            {Number(row.rejectedRoll) > 0 || Number(row.rejectedYds) > 0 ? (
-                              <span className="block text-[#a04a3a]">{row.rejectedRoll} Roll / {row.rejectedYds} Yds rejected</span>
-                            ) : null}
-                          </>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 align-top whitespace-nowrap font-semibold text-[#8a4a24] dark:text-[#d4955e]">
-                        {row.unassignedRoll} Roll / {row.unassignedYds} Yds
-                      </td>
-                      <td className="px-3 py-2 align-top">{statusChip(row.status)}</td>
-                      <td className="px-3 py-2 align-top">
-                        <div className="space-y-1.5">
-                          {/* Existing rack allocations for this batch */}
-                          <AllocationList
-                            locations={row.locations}
-                            onSaveEdit={handleSaveAllocationEdit}
-                            onDelete={handleDeleteAllocation}
-                            busyId={assigningId}
-                          />
+                  <div key={rowId} className="rounded-lg border bg-white p-3 space-y-2.5" style={{ borderColor: BORDER_CLR }}>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-bold text-sm break-words" style={{ color: BLUE_DARK }}>{row.itemCodePdm}</span>
+                      <span className="text-sm font-medium text-gray-700 break-words">{row.color}</span>
+                      <span className="ml-auto">{statusChip(row.status)}</span>
+                    </div>
 
-                          {/* Search-before-assign toggle */}
-                          <button
-                            type="button"
-                            onClick={() => togglePreview(row)}
-                            className={`inline-flex items-center gap-1 text-[10px] font-medium ${previewOpen ? "text-[#2c4a63] dark:text-[#6fa8d0]" : "text-[#4a6578] dark:text-[#8fb0c4]"} hover:underline`}
-                          >
-                            <Search size={11} /> {previewOpen ? "Hide" : "Check"} existing stock
-                          </button>
-
-                          {/* Batch-status explanatory notes for the two new
-                              "can't be assigned" states. */}
-                          {row.status === "pending_inspection" && (
-                            <div className="text-[10px] italic text-[#5c3468] dark:text-[#c68fd4]">
-                              Awaiting Material Inspection approval before this batch can be racked.
-                            </div>
-                          )}
-                          {row.status === "rejected" && (
-                            <div className="text-[10px] italic text-[#a04a3a]">
-                              Rejected during inspection ({row.rejectedRoll} Roll / {row.rejectedYds} Yds) -- not available for stock.
-                            </div>
-                          )}
-
-                          {/* Assign-more form, only while quantity remains unassigned */}
-                          {!isLocked && (
-                            <div className="space-y-1">
-                              {/* Rack select on its own full-width row -- on
-                                  narrow screens, squeezing this into a row
-                                  alongside Roll, Yds and the Assign button
-                                  left almost no width for it, so it rendered
-                                  as just the browser's dropdown arrow with
-                                  the selected rack name invisible. A visible
-                                  "Rack" label + pin icon + full width fixes
-                                  that and makes the current pick obvious. */}
-                              <label className="block">
-                                <span className="block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#4a6578] dark:text-[#8fb0c4]">
-                                  Rack
-                                </span>
-                                <div className="relative">
-                                  <MapPin size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#2c4a63] dark:text-[#6fa8d0] pointer-events-none" />
-                                  <select
-                                    value={draft.location}
-                                    onChange={(e) => setDraft(row.id, "location", e.target.value)}
-                                    className={`${inputCls} w-full !pl-6 font-semibold text-[#2c4a63] dark:text-[#6fa8d0]`}
-                                  >
-                                    {RACK_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                                  </select>
-                                </div>
-                              </label>
-                              <div className="flex items-center gap-1.5">
-                                <input
-                                  type="number" placeholder="Roll" value={draft.roll}
-                                  onChange={(e) => setDraft(row.id, "roll", e.target.value)}
-                                  className={`${inputCls} flex-1`}
-                                />
-                                <input
-                                  type="number" placeholder="Yds" value={draft.yds}
-                                  onChange={(e) => setDraft(row.id, "yds", e.target.value)}
-                                  className={`${inputCls} flex-1`}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleAssign(row)}
-                                  disabled={assigningId === row.id}
-                                  className="inline-flex items-center gap-1 rounded-full bg-[#2c4a63] dark:bg-[#3d6a8a] text-white text-[10px] font-medium px-2.5 py-1.5 hover:bg-[#3d6a8a] dark:hover:bg-[#4a7a9a] transition-colors disabled:opacity-50 shrink-0"
-                                >
-                                  {assigningId === row.id ? "..." : "Assign"}
-                                </button>
-                              </div>
-                              <div className="text-[9px] text-[#a08060]">
-                                Up to {row.unassignedRoll} Roll / {row.unassignedYds} Yds left to place. Assign part of it to split across racks — assigning to a Rack that already holds this batch merges into that same Rack instead of creating a duplicate.
-                              </div>
-                            </div>
-                          )}
-                          {rowError[row.id] && <div className="text-[10px] text-[#a04a3a]">{rowError[row.id]}</div>}
-                        </div>
-                      </td>
-                    </tr>
-                    {previewOpen && (
-                      <tr className="bg-[#3d6a8a]/[0.06] dark:bg-[#6fa8d0]/[0.04]">
-                        <td colSpan={8} className="px-3 py-2.5">
-                          {previewLoadingId === row.id ? (
-                            <div className="text-[11px] text-[#a08060] italic">Checking existing stock...</div>
-                          ) : (
-                            <StockPreview preview={previewData[row.id] || []} />
-                          )}
-                        </td>
-                      </tr>
+                    {row.fabricDetails && (
+                      <div className="text-xs text-gray-500 break-words">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Fabric · </span>
+                        {row.fabricDetails}
+                      </div>
                     )}
-                  </Fragment>
+
+                    <div className="grid grid-cols-1 gap-1.5 rounded-lg px-3 py-2.5 text-xs" style={{ background: BLUE_ROW }}>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-gray-500">Received</span>
+                        <span className="font-semibold text-gray-700 text-right">{row.rollQty} Roll / {row.yds} Yds</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-gray-500">Passed / Rejected</span>
+                        <span className="text-right">{passedInfo(row)}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-gray-500">Unassigned</span>
+                        <span className="font-bold text-right" style={{ color: BLUE_DARK }}>{row.unassignedRoll} Roll / {row.unassignedYds} Yds</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Rack Assignment</div>
+                      {rackBlock(row)}
+                    </div>
+
+                    {openPreviewId === row.id && (
+                      <div className="rounded-lg p-2.5" style={{ background: BLUE_ROW }}>
+                        {previewBody(row)}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+
+            {/* ── lg and up: full sub-table ── */}
+            <div className={`hidden lg:block overflow-x-auto ${scrollThin}`}>
+              <table className="min-w-full text-xs">
+                <thead>
+                  <tr style={{ background: BLUE_HDR }}>
+                    {["Item Code / PDM", "Color", "Fabric Details", "Received Roll/Yds", "Passed / Rejected", "Unassigned", "Status", "Rack Assignment"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-700 border-b ${i === 7 ? "w-96" : ""}`}
+                        style={{ borderBottomColor: "#A8D3EC" }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((row, idx) => {
+                    const rowId = row.id ?? row.key ?? `${row.itemCodePdm}-${row.color}`;
+                    const previewOpen = openPreviewId === row.id;
+                    return (
+                      <Fragment key={rowId}>
+                        <tr className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-[#F7FBFE]"}`}>
+                          <td className="px-3 py-2.5 font-bold align-top" style={{ color: BLUE_DARK }}>{row.itemCodePdm}</td>
+                          <td className="px-3 py-2.5 font-medium text-gray-800 align-top">{row.color}</td>
+                          <td className="px-3 py-2.5 text-gray-600 align-top">
+                            {row.fabricDetails || <span className="italic text-gray-400">-</span>}
+                          </td>
+                          <td className="px-3 py-2.5 align-top whitespace-nowrap text-gray-700">{row.rollQty} Roll / {row.yds} Yds</td>
+                          <td className="px-3 py-2.5 align-top whitespace-nowrap">{passedInfo(row)}</td>
+                          <td className="px-3 py-2.5 align-top whitespace-nowrap font-bold" style={{ color: BLUE_DARK }}>
+                            {row.unassignedRoll} Roll / {row.unassignedYds} Yds
+                          </td>
+                          <td className="px-3 py-2.5 align-top">{statusChip(row.status)}</td>
+                          <td className="px-3 py-2.5 align-top">{rackBlock(row)}</td>
+                        </tr>
+                        {previewOpen && (
+                          <tr style={{ background: BLUE_ROW }}>
+                            <td colSpan={8} className="px-3 py-2.5">
+                              {previewBody(row)}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </td>
     </tr>
@@ -741,7 +848,7 @@ function ItemsBreakdownTable({ invoiceNo, items, onAssigned }) {
 /* ============================================================
    Saved Records search row -- one clearly-labeled input per field
    (Invoice No., Buyer [dropdown], Supplier, PO, Style, Model, Item
-  Code/PDM, Color, Fabric Details), all sitting on a single
+   Code/PDM, Color, Fabric Details), all sitting on a single
    horizontally-scrollable line. Each field is sent to the backend
    as its own query param and matched only against its own column
    there, so "Item Code/PDM" never accidentally matches a "Color"
@@ -751,19 +858,19 @@ function ItemsBreakdownTable({ invoiceNo, items, onAssigned }) {
 function RecordFilterRow({ filters, setFilters }) {
   const anyActive = Object.values(filters).some((v) => v && v.trim());
   return (
-    <div className={`flex items-end gap-1.5 overflow-x-auto pb-0.5 ${scrollThin}`}>
+    <div className={`flex items-end gap-2 overflow-x-auto pb-1 ${scrollThin}`}>
       {RECORD_FILTER_FIELDS.map((f, i) => (
-        <label key={f.key} className="shrink-0 w-[132px]">
-          <span className="block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#a08060] whitespace-nowrap">
+        <label key={f.key} className="shrink-0 w-[140px]">
+          <span className="block mb-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">
             {f.label}
           </span>
           <div className="relative">
-            {i === 0 && <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#a08060]" />}
+            {i === 0 && <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />}
             {f.type === "select" ? (
               <select
                 value={filters[f.key]}
                 onChange={(e) => setFilters((p) => ({ ...p, [f.key]: e.target.value }))}
-                className={`${inputCls} text-[11px] py-1`}
+                className={`${inputSm} ${filters[f.key] ? "!border-[#3B9ED4]/60 !bg-[#EEF6FC]" : ""}`}
               >
                 <option value="">All Buyers</option>
                 {BUYERS.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -774,7 +881,7 @@ function RecordFilterRow({ filters, setFilters }) {
                 value={filters[f.key]}
                 onChange={(e) => setFilters((p) => ({ ...p, [f.key]: e.target.value }))}
                 placeholder={f.label}
-                className={`${inputCls} text-[11px] py-1 ${i === 0 ? "pl-6" : ""}`}
+                className={`${inputSm} ${i === 0 ? "!pl-6" : ""} ${filters[f.key] ? "!border-[#3B9ED4]/60 !bg-[#EEF6FC]" : ""}`}
               />
             )}
           </div>
@@ -784,7 +891,8 @@ function RecordFilterRow({ filters, setFilters }) {
         <button
           type="button"
           onClick={() => setFilters(emptyRecordFilters)}
-          className="shrink-0 self-stretch flex items-center text-[10px] font-medium text-[#b87a4a] hover:underline px-1"
+          className="shrink-0 self-end pb-2 text-[11px] font-semibold hover:underline px-1"
+          style={{ color: BLUE }}
         >
           Clear
         </button>
@@ -800,19 +908,21 @@ function RecordFilterRow({ filters, setFilters }) {
    table-fixed, no per-breakpoint hidden columns). Every column is
    always shown, sized to fit its content -- like a spreadsheet --
    and the whole table sits inside a horizontally scrollable strip
-   (`overflow-x-auto`) so wide content never gets clipped, it just
-   scrolls into view.
+   (`overflow-auto`) so wide content never gets clipped, it just
+   scrolls into view. Use the Columns picker to hide what you don't need.
 
-   PAGINATION: the panel no longer loads every Material Receive at
-   once. `receives` is just the CURRENT PAGE (server-side paginated
-   via ?page=&limit=), and a pagination bar sits below the scroll
-   area showing Page X of Y / total count, a page-size selector, and
-   Prev/Next/First/Last controls.
+   PAGINATION: `receives` is just the CURRENT PAGE (server-side paginated
+   via ?page=&limit=), and a pagination bar sits below the scroll area
+   showing Page X of Y / total count, a page-size selector, and
+   First/Prev/Next/Last controls.
 
    STYLE / MODEL COLUMNS: Style and Model are two separate columns,
    each stacking one line per Style row (in the same order), so
-   Model row N always lines up beside Style row N -- a Receive with
-   three Styles shows three stacked lines in both columns, aligned.
+   Model row N always lines up beside Style row N.
+
+   HEIGHT: from `lg` up the panel fills its (fixed-height) parent and the
+   table body scrolls inside; below `lg` the parent has no fixed height, so
+   the scroll region is capped at 70vh instead.
    ============================================================ */
 
 function RecordsPanel({
@@ -843,7 +953,7 @@ function RecordsPanel({
     {
       id: "expander",
       header: () => "",
-      cell: ({ row }) => (expandedIds.has(row.original.id) ? <ChevronUp size={13} /> : <ChevronDown size={13} />),
+      cell: ({ row }) => (expandedIds.has(row.original.id) ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />),
     },
     {
       accessorKey: "date",
@@ -855,7 +965,7 @@ function RecordsPanel({
       accessorKey: "invoiceNo",
       header: "Invoice No.",
       meta: { className: "whitespace-nowrap" },
-      cell: ({ getValue }) => <span className="font-medium text-[#1a1208] dark:text-[#f0e8dc]">{getValue()}</span>,
+      cell: ({ getValue }) => <span className="font-semibold text-gray-800">{getValue()}</span>,
     },
     {
       accessorKey: "remark",
@@ -863,8 +973,8 @@ function RecordsPanel({
       cell: ({ getValue }) => {
         const v = getValue();
         return v
-          ? <span title={v} className="block max-w-[220px] truncate text-[#7a6250] dark:text-[#a8917d]">{v}</span>
-          : <span className="italic text-[#a08060]">-</span>;
+          ? <span title={v} className="block max-w-[220px] truncate text-gray-500">{v}</span>
+          : <span className="italic text-gray-300">-</span>;
       },
     },
     {
@@ -883,7 +993,7 @@ function RecordsPanel({
       accessorKey: "buyer",
       header: "Buyer",
       meta: { className: "whitespace-nowrap" },
-      cell: ({ getValue }) => getValue(),
+      cell: ({ getValue }) => <span className="font-medium text-gray-800">{getValue()}</span>,
     },
     {
       accessorKey: "supplier",
@@ -891,8 +1001,8 @@ function RecordsPanel({
       cell: ({ getValue }) => {
         const v = getValue();
         return v
-          ? <span title={v} className="block max-w-[200px] truncate text-[#7a6250] dark:text-[#a8917d]">{v}</span>
-          : <span className="italic text-[#a08060]">-</span>;
+          ? <span title={v} className="block max-w-[200px] truncate text-gray-500">{v}</span>
+          : <span className="italic text-gray-300">-</span>;
       },
     },
     {
@@ -915,11 +1025,11 @@ function RecordsPanel({
       header: "Style",
       cell: ({ row }) => {
         const list = row.original.styles || [];
-        if (!list.length) return <span className="italic text-[#a08060]">-</span>;
+        if (!list.length) return <span className="italic text-gray-300">-</span>;
         return (
           <div className="flex flex-col gap-1">
             {list.map((s) => (
-              <div key={s.id ?? s.style} className="truncate max-w-[140px]" title={s.style}>
+              <div key={s.id ?? s.style} className="truncate max-w-[140px] font-semibold" style={{ color: BLUE_DARK }} title={s.style}>
                 {s.style}
               </div>
             ))}
@@ -932,12 +1042,12 @@ function RecordsPanel({
       header: "Model",
       cell: ({ row }) => {
         const list = row.original.styles || [];
-        if (!list.length) return <span className="italic text-[#a08060]">-</span>;
+        if (!list.length) return <span className="italic text-gray-300">-</span>;
         return (
           <div className="flex flex-col gap-1">
             {list.map((s) => (
-              <div key={s.id ?? s.style} className="truncate max-w-[140px]" title={s.model || "-"}>
-                {s.model || <span className="italic text-[#a08060]">-</span>}
+              <div key={s.id ?? s.style} className="truncate max-w-[140px] text-gray-600" title={s.model || "-"}>
+                {s.model || <span className="italic text-gray-300">-</span>}
               </div>
             ))}
           </div>
@@ -962,14 +1072,14 @@ function RecordsPanel({
         const r = row.original;
         const isApproved = r.status === "approved";
         return (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => onEdit(r.id)} disabled={isApproved} title={isApproved ? "Fully approved receives can't be edited" : "Edit"}
-              className="inline-flex items-center gap-1 font-medium text-[#b87a4a] hover:underline disabled:opacity-40 disabled:pointer-events-none">
-              <Pencil size={11} /> <span>Edit</span>
+              className="inline-flex items-center gap-1 font-semibold hover:underline disabled:opacity-40 disabled:pointer-events-none" style={{ color: BLUE }}>
+              <Pencil size={12} /> <span>Edit</span>
             </button>
             <button onClick={() => onDelete(r.id)} disabled={isApproved} title={isApproved ? "Fully approved receives can't be deleted" : "Delete"}
-              className="inline-flex items-center gap-1 font-medium text-[#a04a3a] hover:underline disabled:opacity-40 disabled:pointer-events-none">
-              <Trash2 size={11} /> <span>Delete</span>
+              className="inline-flex items-center gap-1 font-semibold text-red-600 hover:underline disabled:opacity-40 disabled:pointer-events-none">
+              <Trash2 size={12} /> <span>Delete</span>
             </button>
           </div>
         );
@@ -987,53 +1097,71 @@ function RecordsPanel({
   });
 
   return (
-    <div className={`${card} flex flex-col h-full overflow-hidden`}>
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#2c2417]/10 dark:border-[#e8ddd0]/10 shrink-0">
-        <PackageSearch size={16} className="text-[#b87a4a]" />
-        <h2 className="font-serif text-base text-[#1a1208] dark:text-[#f0e8dc]">Saved Records</h2>
-        <span className="text-[11px] text-[#a08060]">({totalCount})</span>
-        <span className="text-[10px] text-[#a08060] ml-auto">Newest first</span>
+    <div className={`${card} flex flex-col lg:h-full overflow-hidden`}>
+      {/* Title bar */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 px-4 sm:px-5 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
+        <PackageSearch size={16} style={{ color: BLUE }} />
+        <h2 className="font-bold text-sm text-gray-800">Saved Records</h2>
+        <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style={{ background: BLUE }}>
+          {totalCount}
+        </span>
+        <span className="hidden sm:inline text-[10px] text-gray-400 ml-auto">Newest first</span>
 
         {/* Column show/hide picker -- tick which columns to show, saved to
             localStorage so the choice is remembered next time. */}
-        <div className="relative" ref={columnsMenuRef}>
+        <div className="relative ml-auto sm:ml-0" ref={columnsMenuRef}>
           <button type="button" onClick={() => setColumnsMenuOpen((o) => !o)} className={btnSecondary}>
-            Columns
+            <SlidersHorizontal size={14} /> Columns
           </button>
           {columnsMenuOpen && (
-            <div className={`absolute right-0 top-full mt-1 z-20 w-48 ${card} py-1 shadow-lg max-h-72 overflow-y-auto ${scrollThin}`}>
-              {table.getAllLeafColumns().filter((c) => c.id !== "expander").map((c) => (
-                <label key={c.id} className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#2c2417] dark:text-[#e8ddd0] hover:bg-[#b87a4a]/10 cursor-pointer">
-                  <input type="checkbox" checked={c.getIsVisible()} onChange={c.getToggleVisibilityHandler()} className="accent-[#b87a4a]" />
-                  {COLUMN_LABELS[c.id] || c.id}
-                </label>
-              ))}
+            <div className="absolute right-0 top-full mt-1.5 z-30 w-52 rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Show/Hide</span>
+                <button type="button" onClick={() => setColumnVisibility({})} className="text-[10px] font-semibold hover:underline" style={{ color: BLUE }}>
+                  All
+                </button>
+              </div>
+              <div className={`max-h-64 overflow-y-auto py-1 ${scrollThin}`}>
+                {table.getAllLeafColumns().filter((c) => c.id !== "expander").map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-[#EEF6FC] cursor-pointer transition-colors">
+                    <input type="checkbox" checked={c.getIsVisible()} onChange={c.getToggleVisibilityHandler()} className="rounded" style={{ accentColor: BLUE }} />
+                    {COLUMN_LABELS[c.id] || c.id}
+                  </label>
+                ))}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="px-4 py-2.5 border-b border-[#2c2417]/10 dark:border-[#e8ddd0]/10 shrink-0">
+      {/* Filters */}
+      <div className="px-4 sm:px-5 py-3 border-b border-gray-100 bg-gray-50/60 shrink-0">
         <RecordFilterRow filters={filters} setFilters={setFilters} />
       </div>
 
-      {/* overflow-auto both ways -- columns are always shown at their
-          natural (Excel-like) width, so wide content scrolls into view
-          instead of being clipped or hidden per breakpoint. */}
-      <div className={`flex-1 min-h-0 overflow-auto ${scrollThin}`}>
+      {/* Table scroll region. Below lg: capped at 70vh. From lg up: fills the
+          panel (whose parent has a definite height). */}
+      <div className={`min-h-0 overflow-auto max-h-[70vh] lg:max-h-none lg:flex-1 ${scrollThin}`}>
         {loading ? (
-          <div className="text-center py-8 text-[#a08060] text-xs">Loading...</div>
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400 text-sm">
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: BLUE + "40", borderTopColor: BLUE }} />
+            Loading records…
+          </div>
         ) : receives.length === 0 ? (
-          <div className="text-center py-8 text-[#a08060] text-xs">No material receives found.</div>
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400 text-sm text-center px-4">
+            <PackageSearch size={32} className="opacity-30" />
+            No material receives found.
+          </div>
         ) : (
-          <table className="min-w-full text-[11px] border-collapse">
-            <thead className="sticky top-0 bg-[#e6e0d4]/70 dark:bg-[#221d16] text-[#7a6250] dark:text-[#a8917d] backdrop-blur z-10">
+          <table className="min-w-full text-xs border-collapse">
+            <thead className="sticky top-0 z-10">
               {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
+                <tr key={hg.id} style={{ background: BLUE_HDR }}>
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={`px-3 py-2 text-left font-semibold ${header.column.columnDef.meta?.className || ""}`}
+                      className={`px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-700 border-b whitespace-nowrap ${header.column.columnDef.meta?.className || ""}`}
+                      style={{ borderBottomColor: "#A8D3EC" }}
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                     </th>
@@ -1042,19 +1170,19 @@ function RecordsPanel({
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.map((row) => {
+              {table.getRowModel().rows.map((row, i) => {
                 const r = row.original;
                 const isOpen = expandedIds.has(r.id);
                 return (
                   <Fragment key={row.id}>
                     <tr
                       onClick={() => toggleExpanded(r.id)}
-                      className="border-t border-[#2c2417]/8 dark:border-[#e8ddd0]/8 cursor-pointer hover:bg-[#b87a4a]/5"
+                      className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-[#DBEEFF] ${isOpen ? "bg-[#DBEEFF]" : i % 2 === 0 ? "bg-white" : "bg-[#EEF6FC]"}`}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className={`px-3 py-2 align-top ${cell.column.columnDef.meta?.className || ""}`}
+                          className={`px-3 py-2.5 align-top text-gray-700 ${cell.column.columnDef.meta?.className || ""}`}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
@@ -1071,25 +1199,30 @@ function RecordsPanel({
 
       {/* Pagination bar -- server-side paginated (see fetchReceives),
           always visible at the bottom of the card regardless of scroll. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-t border-[#2c2417]/10 dark:border-[#e8ddd0]/10 shrink-0 text-[11px] text-[#7a6250] dark:text-[#a8917d]">
-        <div className="flex items-center gap-2">
-          <span className="whitespace-nowrap">
-            Page {page} of {totalPages} · {totalCount} total
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50 shrink-0 text-xs text-gray-500">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="whitespace-nowrap font-medium">
+            Page {page} of {totalPages} · {totalCount.toLocaleString()} total
           </span>
-          <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className={`${inputCls} !py-1 !w-auto`}
-          >
-            {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n} / page</option>)}
-          </select>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline">Rows per page</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="rounded-lg border border-gray-200 bg-white text-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B9ED4]/25"
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
         </div>
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => goToPage(1)} disabled={page <= 1} className={btnSecondary}>« First</button>
-          <button type="button" onClick={() => goToPage(page - 1)} disabled={page <= 1} className={btnSecondary}>‹ Prev</button>
-          <span className="px-1 whitespace-nowrap">{page} / {totalPages}</span>
-          <button type="button" onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className={btnSecondary}>Next ›</button>
-          <button type="button" onClick={() => goToPage(totalPages)} disabled={page >= totalPages} className={btnSecondary}>Last »</button>
+          <button type="button" className={btnIcon} onClick={() => goToPage(1)} disabled={page <= 1} title="First"><ChevronsLeft size={13} /></button>
+          <button type="button" className={btnIcon} onClick={() => goToPage(page - 1)} disabled={page <= 1} title="Prev"><ChevronLeft size={13} /></button>
+          <span className="px-3 py-1 rounded-lg text-white text-xs font-bold whitespace-nowrap" style={{ background: BLUE }}>
+            {page} / {totalPages}
+          </span>
+          <button type="button" className={btnIcon} onClick={() => goToPage(page + 1)} disabled={page >= totalPages} title="Next"><ChevronRight size={13} /></button>
+          <button type="button" className={btnIcon} onClick={() => goToPage(totalPages)} disabled={page >= totalPages} title="Last"><ChevronsRight size={13} /></button>
         </div>
       </div>
     </div>
@@ -1129,7 +1262,7 @@ export default function MaterialReceivePage() {
   //
   // Also sends page=/limit= so the backend returns only ONE PAGE of
   // records (and their styles/items/locations) instead of all 1000+ at
-  // once. Response shape is now { data, total, page, limit, totalPages }.
+  // once. Response shape is { data, total, page, limit, totalPages }.
   const fetchReceives = useCallback(async (filters = emptyRecordFilters, pageArg = 1, limitArg = 20) => {
     setLoading(true); setError("");
     try {
@@ -1289,76 +1422,82 @@ export default function MaterialReceivePage() {
   const buyerOptions = form.buyer && !BUYERS.includes(form.buyer) ? [form.buyer, ...BUYERS] : BUYERS;
 
   return (
-    <div className="min-h-screen bg-[#f0ede6] dark:bg-[#1b1712]">
-      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <PackageSearch size={22} className="text-[#b87a4a]" />
-            <div>
-              <h1 className="font-serif text-2xl text-[#1a1208] dark:text-[#f0e8dc]">
-                Material <em className="italic text-[#b87a4a] dark:text-[#d4955e]">Receive</em>
-              </h1>
-              <p className="text-xs text-[#7a6250] dark:text-[#a8917d]">
-                Record incoming fabric/material invoices, grouped by Item Code/PDM and Color. Each batch first goes to
-                Material Inspection for approval, then can be split across one or more Locations/Racks here.
-              </p>
-            </div>
+    <div className="min-h-screen" style={{ background: PAGE_BG, fontFamily: "Inter, system-ui, sans-serif" }}>
+
+      {/* ── Top bar (matches Material Stock / Style Register) ── */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0" style={{ background: BLUE }}>
+            <PackageSearch size={18} className="text-white" />
           </div>
-          {!formOpen && (
-            <button type="button" onClick={handleNewReceive} className={btnPrimary}>
-              <Plus size={13} /> New Material Receive
-            </button>
-          )}
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-gray-800 leading-tight truncate">Material Receive</h1>
+            <p className="text-[10px] text-gray-400 truncate">Record incoming fabric / material invoices</p>
+          </div>
+        </div>
+        {!formOpen && (
+          <button type="button" onClick={handleNewReceive} className={`${btnPrimary} shrink-0`}>
+            <Plus size={15} />
+            <span className="hidden sm:inline">New Material Receive</span>
+            <span className="sm:hidden">New</span>
+          </button>
+        )}
+      </div>
+
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-4 py-4 sm:py-5 space-y-4">
+
+        {/* ── Info note ── */}
+        <div
+          className="flex items-start gap-2.5 rounded-xl border px-3 sm:px-4 py-3 text-xs text-gray-600"
+          style={{ background: BLUE_ROW, borderColor: BORDER_CLR }}
+        >
+          <Info size={15} className="shrink-0 mt-0.5" style={{ color: BLUE }} />
+          <p>
+            Record incoming fabric/material invoices, grouped by Item Code/PDM and Color. Each batch first goes to
+            Material Inspection for approval, then can be split across one or more Locations/Racks here.
+          </p>
         </div>
 
-        {error && <div className="rounded-lg bg-[#b87a4a]/10 border border-[#b87a4a]/25 text-[#8a4a24] dark:text-[#e0a878] text-xs px-3 py-2"><b>Error:</b> {error}</div>}
-        {success && <div className="rounded-lg bg-[#5ca068]/10 border border-[#5ca068]/25 text-[#3d7a4a] dark:text-[#8fca9c] text-xs px-3 py-2">{success}</div>}
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3">
+            <span className="font-bold">Error:</span> {error}
+          </div>
+        )}
+        {success && (
+          <div className="rounded-xl border border-green-200 bg-green-50 text-green-700 text-sm px-4 py-3">{success}</div>
+        )}
 
         {/*
-          FORM + RECORDS TABLE, side by side, each with its OWN
-          independent scroll region:
+          FORM + RECORDS TABLE.
 
-          - Outer wrapper (per column) is `sticky` at `top-6`.
-          - The RECORDS column now gets a *fixed* height
-            (`h-[calc(100vh-3rem)]`) instead of only a `max-h-...`.
-            `RecordsPanel` relies on `h-full` internally to size its
-            own `flex-1 overflow-auto` table body -- and `height: 100%`
-            can only resolve against an ancestor with a DEFINITE height.
-            `max-height` alone leaves the computed height as `auto`,
-            so `h-full` had nothing to measure against and the whole
-            panel just grew with the table instead of scrolling. A
-            fixed `h-[...]` fixes that.
-          - The FORM column doesn't need this: it applies
-            `overflow-y-auto` directly on itself with its own
-            `max-h-...`, so `max-height` alone is fine there.
-          - Both scroll regions use the shared `scrollThin` thin,
-            theme-colored scrollbar instead of the browser default.
-
-          Because each column's scroll container is separate, scrolling
-          the form never moves the table and scrolling the table never
-          moves the form -- and the table now only ever holds ONE PAGE
-          of records (see fetchReceives), so it scrolls smoothly instead
-          of rendering 1000+ rows at once.
+          - lg and up: side by side, each with its OWN independent scroll
+            region (sticky columns; the records column gets a FIXED viewport
+            height so RecordsPanel's flex-1 scroll area has something definite
+            to size against and actually scrolls).
+          - below lg: stacked. The form (when open) sits on top at full width,
+            the records panel below it with its scroll region capped at 70vh.
         */}
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-4">
           {/* FORM COLUMN */}
           <div
-            className={`shrink-0 transition-all duration-300 ease-in-out ${formOpen ? "w-[340px] opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-6 pointer-events-none"
+            className={`w-full lg:shrink-0 transition-all duration-300 ease-in-out ${formOpen
+                ? "block lg:w-[340px] opacity-100 translate-x-0"
+                : "hidden lg:block lg:w-0 opacity-0 -translate-x-6 pointer-events-none"
               }`}
           >
-            <div className={`sticky top-6 w-[340px] max-h-[calc(100vh-3rem)] overflow-y-auto overflow-x-hidden ${scrollHidden}`}>
-              <form onSubmit={handleSubmit} className={`${card} p-3 space-y-3 w-[340px]`}>
-                <div className="flex items-center justify-between pb-1 border-b border-[#2c2417]/10 dark:border-[#e8ddd0]/10">
-                  <h2 className="font-serif text-sm text-[#1a1208] dark:text-[#f0e8dc]">
+            <div className={`lg:sticky lg:top-4 lg:w-[340px] lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto overflow-x-hidden ${scrollHidden}`}>
+              <form onSubmit={handleSubmit} className={`${card} p-3 sm:p-4 lg:p-3 space-y-3 w-full lg:w-[340px]`}>
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <h2 className="font-bold text-sm text-gray-800">
                     {editingId ? "Edit Receive" : "Receive Details"}
                   </h2>
                   <button type="button" onClick={() => { setFormOpen(false); if (editingId) resetForm(); }}
-                    className="text-[#a08060] hover:text-[#b87a4a] transition-colors" title="Close">
-                    <X size={14} />
+                    className="text-gray-400 hover:text-[#3B9ED4] transition-colors p-1 -m-1" title="Close">
+                    <X size={16} />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+                <div className="grid grid-cols-2 gap-x-2.5 gap-y-2.5">
                   <Field text="Date" required><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputCls} /></Field>
                   <Field text="Invoice No." required><input type="text" required value={form.invoiceNo} onChange={(e) => setForm({ ...form, invoiceNo: up(e.target.value) })} className={inputCls} /></Field>
                   <Field text="From" required>
@@ -1393,10 +1532,8 @@ export default function MaterialReceivePage() {
                   <Field text="Season" required><input type="text" required value={form.season} onChange={(e) => setForm({ ...form, season: up(e.target.value) })} className={inputCls} /></Field>
                   <Field text="PO" required><input type="text" required value={form.po} onChange={(e) => setForm({ ...form, po: up(e.target.value) })} className={inputCls} /></Field>
                   <Field text="Item" required><input type="text" required value={form.item} onChange={(e) => setForm({ ...form, item: up(e.target.value) })} className={inputCls} /></Field>
-                  {/* Buy is now OPTIONAL -- no "required" prop on Field (no
-                      asterisk) and no "required" attribute on the input, so
-                      whoever wants to fill it in can, but it's no longer
-                      mandatory to submit the form. */}
+                  {/* Buy is OPTIONAL -- no "required" prop on Field (no
+                      asterisk) and no "required" attribute on the input. */}
                   <Field text="Buy"><input type="text" value={form.buy} onChange={(e) => setForm({ ...form, buy: up(e.target.value) })} placeholder="Optional" className={inputCls} /></Field>
 
                   <div className="col-span-2">
@@ -1418,12 +1555,12 @@ export default function MaterialReceivePage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between pb-1 border-b border-[#2c2417]/10 dark:border-[#e8ddd0]/10">
-                    <h2 className="font-serif text-sm text-[#1a1208] dark:text-[#f0e8dc]">Item Code / PDM &amp; Colors</h2>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                    <h2 className="font-bold text-sm text-gray-800">Item Code / PDM &amp; Colors</h2>
                   </div>
-                  <button type="button" onClick={addItemCode} className={`${btnSecondary} w-full justify-center`}><Plus size={13} /> Add Item Code/PDM</button>
-                  <div className="space-y-1.5">
+                  <button type="button" onClick={addItemCode} className={`${btnSecondary} w-full`}><Plus size={14} /> Add Item Code/PDM</button>
+                  <div className="space-y-2">
                     {itemCodes.map((ic, i) => (
                       <ItemCodeCard key={ic.key} itemCode={ic} index={i} canRemove={itemCodes.length > 1}
                         onNameChange={(v) => updateItemCodeName(ic.key, v)} onRemove={() => removeItemCode(ic.key)}
@@ -1433,20 +1570,18 @@ export default function MaterialReceivePage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-1 border-t border-[#2c2417]/10 dark:border-[#e8ddd0]/10">
-                  <button type="submit" disabled={saving} className={`${btnPrimary} w-full justify-center`}>
+                <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                  <button type="submit" disabled={saving} className={`${btnPrimary} w-full`}>
                     {saving ? "Saving..." : editingId ? "Update Material Receive" : "Save Material Receive"}
                   </button>
-                  {editingId && <button type="button" onClick={() => { resetForm(); setFormOpen(false); }} className={`${btnSecondary} w-full justify-center`}>Cancel Edit</button>}
+                  {editingId && <button type="button" onClick={() => { resetForm(); setFormOpen(false); }} className={`${btnSecondary} w-full`}>Cancel Edit</button>}
                 </div>
               </form>
             </div>
           </div>
 
-          {/* RECORDS COLUMN -- sticky + a FIXED viewport height (not just
-              max-height), so RecordsPanel's h-full/flex-1 scroll region has
-              something definite to size against and actually scrolls. */}
-          <div className="flex-1 min-w-0 sticky top-6 h-[calc(100vh-3rem)] overflow-hidden">
+          {/* RECORDS COLUMN */}
+          <div className="w-full min-w-0 lg:w-auto lg:flex-1 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
             <RecordsPanel
               filters={recordFilters}
               setFilters={setRecordFilters}
@@ -1467,6 +1602,13 @@ export default function MaterialReceivePage() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c8d9e8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ab8cc; }
+      `}</style>
     </div>
   );
 }

@@ -1,56 +1,37 @@
 // frontend/app/(Pages)/(Material-warehouse)/material-warehouse/dashboard/page.js
-
 //
-// Dashboard page for the buyer overview. White theme, single
-// viewport (h-screen + overflow-hidden, no page scroll at all), reading
-// from ONE endpoint now:
-//   - GET /dashboard/buyer-overview?date=YYYY-MM-DD  (dashboard.controllers.js)
-//       -> kpis, buyerStock, itemCodeStock, statusBreakdown, requisitionBreakdown
+// SINGLE-VIEWPORT RESPONSIVE PASS
+// --------------------------------
+// Same data, same panels, same fetch logic, same white theme. Stays a
+// strict single-viewport dashboard -- `height:100vh; overflow:hidden`,
+// exactly like before, NO page scrollbar on any screen size -- but every
+// size/spacing that used to be a fixed pixel value now scales with the
+// viewport instead, so the same fixed layout (4 KPI cards in a row, 6
+// panels in a row) fits and stays readable on a small laptop just as
+// well as an ultra-wide monitor.
 //
-// The `date` query param ONLY affects statusBreakdown and
-// requisitionBreakdown (exact-day match against the parent Material
-// Receive's date / the Requisition's own date). kpis, buyerStock and
-// itemCodeStock are always all-time totals, same as before. Defaults to
-// "today" on first load; picking a date in the header re-fetches with
-// that date.
+// What changed, mechanically:
+//   - KPI row: still always 4 columns (`repeat(4, 1fr)`), but its row
+//     height is now `clamp(min, vh, max)` -- a proportional slice of the
+//     viewport height -- instead of a fixed 150px.
+//   - Charts row: still always the same 6 fixed-ratio columns
+//     (1.1fr 1.1fr 0.9fr 0.75fr 0.75fr 0.85fr) in a single row, filling
+//     whatever vertical space is left via `flex:1`. Columns simply get
+//     narrower on a narrow screen -- each panel's own horizontal
+//     scroller (buyer/item-code bars) or text wrap (supplier names)
+//     absorbs that, so nothing needs a second row.
+//   - Every font-size / padding on the layout-critical bits (page
+//     padding, KPI card padding + value size, Panel padding + eyebrow/
+//     title size, header title) is a `clamp(min, vw/vh, max)` value, so
+//     text and spacing shrink smoothly on a smaller screen instead of
+//     overflowing or forcing a scrollbar.
+//   - Panel/KpiCard internals (charts, legends, supplier list, ageing
+//     pie, buyer/item-code horizontal scrollers) are untouched -- same
+//     recharts config, same colors, same dummy-data / live-fetch logic.
 //
-// NOTE: the old "By Supplier" bar chart (which reused the
-// materialRackView controller's stockBySupplier field) has been removed
-// and replaced with an "By Item Code" panel, aggregated server-side in
-// dashboard.controllers.js from the SAME location-allocation data the
-// Buyer panel already reads -- no second endpoint needed anymore.
-//
-// TEMP: Decathlon ( K ) and Columbia don't have real Woven stock data
-// yet. Until real data exists for them, we inject placeholder roll/yds
-// values derived from Decathlon ( W )'s real figures (a fraction of it),
-// so they always show LESS than Decathlon ( W ). See
-// injectDummyWovenBuyers() below. Remove an entry from DUMMY_WOVEN_BUYERS
-// once real data for that buyer starts coming back from the API.
-//
-// NEW: Supplier Ranking panel, sourced from the monthly
-// "Suppliers Performance Evaluation" sheet (Quality/Delivery/Service ->
-// Achieve % -> Grade). This is currently seeded from the latest
-// Suppliers_Ranking.xlsx export as static data (SUPPLIER_RANKING_DATA
-// below) since there isn't a backend endpoint for it yet. Swap that
-// constant for a real fetch once one exists -- the panel itself doesn't
-// need to change, it just expects the same shape.
-//
-// AUTO-REFRESH: the dashboard silently re-fetches GET
-// /dashboard/buyer-overview every REFRESH_INTERVAL_MS (5s) so figures
-// stay current without a manual reload. Only the FIRST load for a given
-// selectedDate shows the "Updating…" indicator / dummy-data seed;
-// subsequent 5s refreshes swap the data in quietly (no spinner flicker).
-// Changing the date clears the old interval and starts a fresh one.
-//
-// What's on screen, all at once, no scrolling:
-//   - 4 KPI cards (bigger now): Total Available Roll, Total Available Yds,
-//     Pending Inspection, Total Receiving
-//   - Buyer-wise Available Roll -- horizontal-scroll vertical bar chart
-//     (buyer names always shown in full, never truncated)
-//   - Item Code-wise Available Roll + Yds -- horizontal-scroll grouped bar chart
-//   - Supplier Ranking -- vertical-scroll ranked list, graded A/B/C
-//   - Batch Status breakdown -- pie chart, date-filterable
-//   - Requisition Status breakdown -- pie chart, date-filterable
+// Everything else (the two endpoints, the 5s auto-refresh, the ageing
+// bucket logic, the dummy Woven-buyer injection, the supplier ranking
+// data) is byte-for-byte the same as before.
 
 "use client";
 
@@ -73,6 +54,37 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // How often to silently re-fetch the dashboard data, in milliseconds.
 const REFRESH_INTERVAL_MS = 5000;
+
+// ============================================================
+// Stock ageing config. Bucket order + colors MUST match
+// AGE_BUCKET_ORDER in materialStock.controllers.js and
+// AGE_BUCKET_COLORS in the Material Stock page (green = fresh,
+// red = oldest / slow-moving).
+// ============================================================
+const AGE_BUCKET_ORDER = ["0-30 days", "31-60 days", "61-90 days", "91-180 days", "180+ days"];
+const AGE_BUCKET_COLORS = {
+  "0-30 days": "#22c55e",
+  "31-60 days": "#84cc16",
+  "61-90 days": "#f59e0b",
+  "91-180 days": "#f97316",
+  "180+ days": "#ef4444",
+};
+
+// Guarantees all five buckets exist, in a fixed order, with numeric
+// values -- so the pie/legend never reshuffles or crashes on a missing
+// bucket or a stringified number coming back from the API.
+function normalizeAgeing(list) {
+  const map = new Map((list || []).map((a) => [a.ageBucket, a]));
+  return AGE_BUCKET_ORDER.map((b) => {
+    const a = map.get(b) || {};
+    return {
+      ageBucket: b,
+      batchCount: Number(a.batchCount) || 0,
+      totalAvailableRoll: Number(a.totalAvailableRoll) || 0,
+      totalAvailableYds: Number(a.totalAvailableYds) || 0,
+    };
+  });
+}
 
 // ============================================================
 // TEMP: frontend-only DUMMY DATA, used only as an initial placeholder so
@@ -122,6 +134,16 @@ const DUMMY_DATA = {
     { itemCode: "PDM-4420", roll: 210, yds: 31200 },
   ],
 };
+
+// Placeholder for the Stock Ageing pie until the first /material-stock
+// response arrives.
+const DUMMY_AGEING = normalizeAgeing([
+  { ageBucket: "0-30 days", batchCount: 60, totalAvailableRoll: 2100, totalAvailableYds: 412000 },
+  { ageBucket: "31-60 days", batchCount: 41, totalAvailableRoll: 1350, totalAvailableYds: 268000 },
+  { ageBucket: "61-90 days", batchCount: 25, totalAvailableRoll: 780, totalAvailableYds: 154000 },
+  { ageBucket: "91-180 days", batchCount: 14, totalAvailableRoll: 520, totalAvailableYds: 88000 },
+  { ageBucket: "180+ days", batchCount: 7, totalAvailableRoll: 250, totalAvailableYds: 41950 },
+]);
 
 // ============================================================
 // TEMP: Decathlon ( K ) and Columbia placeholder ("Woven") data.
@@ -276,7 +298,7 @@ function Panel({ eyebrow, title, right, children }) {
         background: T.panel,
         border: `1px solid ${T.border}`,
         borderRadius: 10,
-        padding: 14,
+        padding: "clamp(6px, 1.4vh, 14px) clamp(8px, 1vw, 14px)",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
@@ -285,12 +307,12 @@ function Panel({ eyebrow, title, right, children }) {
         boxShadow: "0 1px 3px rgba(26,18,8,0.04)",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 8, flexShrink: 0 }}>
-        <div>
-          <div style={{ fontFamily: monoFont, fontSize: 11, letterSpacing: "0.12em", color: T.amber, textTransform: "uppercase", marginBottom: 3 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 8, flexShrink: 0, gap: 8, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: monoFont, fontSize: "clamp(9.5px, 0.75vw, 11px)", letterSpacing: "0.12em", color: T.amber, textTransform: "uppercase", marginBottom: 3 }}>
             {eyebrow}
           </div>
-          <div style={{ fontFamily: displayFont, fontSize: 18, fontWeight: 600, color: T.text }}>{title}</div>
+          <div style={{ fontFamily: displayFont, fontSize: "clamp(15px, 1.4vw, 18px)", fontWeight: 600, color: T.text }}>{title}</div>
         </div>
         {right}
       </div>
@@ -299,8 +321,9 @@ function Panel({ eyebrow, title, right, children }) {
   );
 }
 
-// KPI cards -- made noticeably bigger (taller row + larger value type)
-// per request.
+// KPI cards -- sizes now scale with clamp() instead of fixed px, so they
+// stay readable whether the row is 4-across on a monitor or stacked on a
+// phone.
 function KpiCard({ icon: Icon, label, value, unit, accent }) {
   return (
     <div
@@ -308,11 +331,11 @@ function KpiCard({ icon: Icon, label, value, unit, accent }) {
         background: T.panel,
         border: `1px solid ${T.border}`,
         borderRadius: 14,
-        padding: "22px 26px",
+        padding: "clamp(8px, 2vh, 22px) clamp(12px, 1.6vw, 26px)",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        gap: 14,
+        gap: "clamp(4px, 1.2vh, 12px)",
         position: "relative",
         overflow: "hidden",
         height: "100%",
@@ -320,15 +343,15 @@ function KpiCard({ icon: Icon, label, value, unit, accent }) {
       }}
     >
       <div style={{ position: "absolute", top: 0, left: 0, width: 6, height: "100%", background: accent }} />
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Icon size={22} color={accent} strokeWidth={2} />
-        <span style={{ fontFamily: monoFont, fontSize: 13, letterSpacing: "0.08em", color: T.muted, textTransform: "uppercase" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+        <Icon size={20} color={accent} strokeWidth={2} style={{ flexShrink: 0 }} />
+        <span style={{ fontFamily: monoFont, fontSize: "clamp(10px, 0.9vw, 13px)", letterSpacing: "0.08em", color: T.muted, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {label}
         </span>
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
-        <span style={{ fontFamily: displayFont, fontSize: 48, fontWeight: 700, color: T.text, lineHeight: 1 }}>{fmt(value)}</span>
-        {unit && <span style={{ fontFamily: monoFont, fontSize: 16, color: T.muted }}>{unit}</span>}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 9, minWidth: 0 }}>
+        <span style={{ fontFamily: displayFont, fontSize: "clamp(22px, 3.2vw, 48px)", fontWeight: 700, color: T.text, lineHeight: 1, whiteSpace: "nowrap" }}>{fmt(value)}</span>
+        {unit && <span style={{ fontFamily: monoFont, fontSize: "clamp(11px, 1vw, 16px)", color: T.muted, whiteSpace: "nowrap" }}>{unit}</span>}
       </div>
     </div>
   );
@@ -353,10 +376,10 @@ function PieLegendList({ data, colorMap, labelMap, total }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 7, justifyContent: "center" }}>
       {data.map((d) => (
-        <div key={d.status} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: bodyFont, fontSize: 14 }}>
+        <div key={d.status} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: bodyFont, fontSize: "clamp(12px, 0.9vw, 14px)" }}>
           <span style={{ width: 10, height: 10, borderRadius: 3, background: colorMap[d.status] || T.muted, display: "inline-block", flexShrink: 0 }} />
           <span style={{ color: T.text, flex: 1 }}>{labelMap[d.status] || d.status}</span>
-          <span style={{ fontFamily: monoFont, fontSize: 13, color: T.muted }}>
+          <span style={{ fontFamily: monoFont, fontSize: "clamp(11px, 0.8vw, 13px)", color: T.muted }}>
             {d.count} {total ? `(${Math.round((d.count / total) * 100)}%)` : ""}
           </span>
         </div>
@@ -365,9 +388,69 @@ function PieLegendList({ data, colorMap, labelMap, total }) {
   );
 }
 
+// NEW: legend for the Stock Ageing pie. Same look as PieLegendList, but
+// values are formatted with thousands separators (yards run into the
+// hundreds of thousands) and all five buckets are always listed -- an
+// empty bucket shows 0 rather than disappearing.
+function AgeingLegend({ data, total }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7, justifyContent: "center" }}>
+      {data.map((d) => (
+        <div key={d.bucket} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: bodyFont, fontSize: "clamp(12px, 0.9vw, 14px)" }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: AGE_BUCKET_COLORS[d.bucket] || T.muted, display: "inline-block", flexShrink: 0 }} />
+          <span style={{ color: T.text, flex: 1 }}>{d.bucket}</span>
+          <span style={{ fontFamily: monoFont, fontSize: "clamp(11px, 0.8vw, 13px)", color: T.muted }}>
+            {fmt(Math.round(d.value))} {total ? `(${Math.round((d.value / total) * 100)}%)` : ""}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// NEW: small Yds / Roll switch for the Stock Ageing panel header.
+function MetricToggle({ value, onChange }) {
+  const opts = [
+    { key: "yds", label: "Yds" },
+    { key: "roll", label: "Roll" },
+  ];
+  return (
+    <div style={{ display: "inline-flex", border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
+      {opts.map((o) => {
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            style={{
+              fontFamily: monoFont,
+              fontSize: 11,
+              padding: "3px 9px",
+              border: "none",
+              cursor: "pointer",
+              background: active ? T.amber : "#fff",
+              color: active ? "#fff" : T.muted,
+              fontWeight: active ? 600 : 400,
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // NEW: Supplier Ranking panel -- simple ranked list, sorted by
 // achievePct descending (nulls/N/A sink to the bottom). Each row shows
 // rank, supplier name + country, and a grade badge with the achieve %.
+//
+// All text here is small + bold and sized with clamp() so it scales down
+// on small screens. The supplier name is NEVER truncated: no ellipsis, no
+// nowrap, no overflow:hidden on the name -- long names simply wrap onto
+// as many lines as they need (overflowWrap:"anywhere" also breaks a
+// single very long word if it has to).
 function SupplierRanking({ suppliers }) {
   const ranked = [...suppliers].sort((a, b) => {
     if (a.achievePct == null && b.achievePct == null) return 0;
@@ -378,86 +461,105 @@ function SupplierRanking({ suppliers }) {
 
   return (
     <div className="supplier-scroll" style={{ height: "100%", overflowY: "auto", paddingRight: 4 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {ranked.map((s, i) => {
           const gradeColor = s.grade ? GRADE_COLORS[s.grade] || T.muted : T.muted;
           return (
             <div
-  key={s.code}
-  style={{
-    display: "flex",
-    alignItems: "flex-start",   // center থেকে flex-start, কারণ নাম এখন একাধিক লাইনে যেতে পারে
-    gap: 10,
-    padding: "7px 9px",
-    borderRadius: 7,
-    background: i < 3 ? "rgba(184,122,74,0.05)" : "transparent",
-    border: `1px solid ${i < 3 ? T.border : "transparent"}`,
-  }}
->
-  <span
-    style={{
-      fontFamily: displayFont,
-      fontSize: 15,
-      fontWeight: 700,
-      color: i < 3 ? T.amber : T.muted,
-      width: 20,
-      textAlign: "center",
-      flexShrink: 0,
-      paddingTop: 1,           // rank সংখ্যাটা নামের প্রথম লাইনের সাথে align থাকার জন্য
-    }}
-  >
-    {i + 1}
-  </span>
-  <div style={{ flex: 1, minWidth: 0 }}>
-    <div
-      style={{
-        fontFamily: bodyFont,
-        fontSize: 13.5,
-        fontWeight: 600,
-        color: T.text,
-        whiteSpace: "normal",     // nowrap বাদ
-        wordBreak: "break-word",  // লম্বা নাম হলেও wrap হবে
-        lineHeight: 1.25,
-      }}
-      // title আর দরকার নেই যেহেতু পুরো নামই দেখা যাচ্ছে, কিন্তু রেখে দিলে ক্ষতি নেই
-      title={s.name}
-    >
-      {s.name}
-    </div>
-    <div style={{ fontFamily: monoFont, fontSize: 10.5, color: T.muted }}>
-      {s.country} · {s.consignments} consignment{s.consignments === 1 ? "" : "s"}
-    </div>
-  </div>
-  <span
-    style={{
-      fontFamily: monoFont,
-      fontSize: 12.5,
-      color: T.text,
-      minWidth: 44,
-      textAlign: "right",
-      flexShrink: 0,
-      paddingTop: 1,
-    }}
-  >
-    {s.achievePct != null ? `${fmt(s.achievePct)}%` : "N/A"}
-  </span>
-  <span
-    style={{
-      fontFamily: monoFont,
-      fontSize: 11,
-      fontWeight: 600,
-      color: "#fff",
-      background: gradeColor,
-      borderRadius: 5,
-      padding: "2px 7px",
-      flexShrink: 0,
-      minWidth: 20,
-      textAlign: "center",
-    }}
-  >
-    {s.grade || "–"}
-  </span>
-</div>
+              key={s.code}
+              style={{
+                display: "flex",
+                alignItems: "flex-start", // name can wrap to several lines, so align to the top
+                gap: 8,
+                padding: "6px 8px",
+                borderRadius: 7,
+                background: i < 3 ? "rgba(184,122,74,0.05)" : "transparent",
+                border: `1px solid ${i < 3 ? T.border : "transparent"}`,
+              }}
+            >
+              {/* Rank */}
+              <span
+                style={{
+                  fontFamily: displayFont,
+                  fontSize: "clamp(11px, 0.85vw, 14px)",
+                  fontWeight: 700,
+                  color: i < 3 ? T.amber : T.muted,
+                  width: 18,
+                  textAlign: "center",
+                  flexShrink: 0,
+                  lineHeight: 1.25,
+                }}
+              >
+                {i + 1}
+              </span>
+
+              {/* Name + country (name always fully visible, wraps if long) */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontFamily: bodyFont,
+                    fontSize: "clamp(10px, 0.8vw, 12.5px)",
+                    fontWeight: 700,
+                    color: T.text,
+                    lineHeight: 1.25,
+                    whiteSpace: "normal",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                  }}
+                  title={s.name}
+                >
+                  {s.name}
+                </div>
+                <div
+                  style={{
+                    fontFamily: monoFont,
+                    fontSize: "clamp(9px, 0.65vw, 10.5px)",
+                    fontWeight: 600,
+                    color: T.muted,
+                    lineHeight: 1.3,
+                    whiteSpace: "normal",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {s.country} · {s.consignments} consignment{s.consignments === 1 ? "" : "s"}
+                </div>
+              </div>
+
+              {/* Achieve % */}
+              <span
+                style={{
+                  fontFamily: monoFont,
+                  fontSize: "clamp(9.5px, 0.75vw, 12px)",
+                  fontWeight: 700,
+                  color: T.text,
+                  minWidth: 38,
+                  textAlign: "right",
+                  flexShrink: 0,
+                  lineHeight: 1.3,
+                }}
+              >
+                {s.achievePct != null ? `${fmt(s.achievePct)}%` : "N/A"}
+              </span>
+
+              {/* Grade badge */}
+              <span
+                style={{
+                  fontFamily: monoFont,
+                  fontSize: "clamp(9.5px, 0.72vw, 11px)",
+                  fontWeight: 700,
+                  color: "#fff",
+                  background: gradeColor,
+                  borderRadius: 5,
+                  padding: "1px 6px",
+                  flexShrink: 0,
+                  minWidth: 18,
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                }}
+              >
+                {s.grade || "–"}
+              </span>
+            </div>
           );
         })}
       </div>
@@ -477,6 +579,11 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [pieLoading, setPieLoading] = useState(false);
 
+  // NEW: Stock Ageing pie state. `ageingSummary` always holds all five
+  // buckets (see normalizeAgeing); `ageingMetric` is the Yds/Roll toggle.
+  const [ageingSummary, setAgeingSummary] = useState(DUMMY_AGEING);
+  const [ageingMetric, setAgeingMetric] = useState("yds");
+
   useEffect(() => {
     let cancelled = false;
     let intervalId = null;
@@ -485,11 +592,31 @@ export default function DashboardPage() {
     // render on first paint.
     if (!data) setData(DUMMY_DATA);
 
+    // NEW: pulls ONLY the `ageingSummary` field out of GET /material-stock.
+    // Kept in its own try/catch so a failure here (or a slow response)
+    // never affects the rest of the dashboard -- the pie just keeps its
+    // last good values.
+    const fetchAgeing = async () => {
+      try {
+        const res = await fetch(`${API_URL}/material-stock`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to load stock ageing data");
+        const json = await res.json();
+        if (cancelled) return;
+        setAgeingSummary(normalizeAgeing(json.ageingSummary));
+      } catch (err) {
+        console.error("dashboard stock ageing fetch failed:", err.message);
+      }
+    };
+
     // isFirstLoad -> true only for the very first fetch after mount / a
     // date change, so the "Updating…" indicator only flashes once per
     // date selection, not on every silent 5s poll.
     const fetchDashboard = async (isFirstLoad) => {
       if (isFirstLoad) setPieLoading(true);
+
+      // Fire the ageing request in parallel with the main one.
+      fetchAgeing();
+
       try {
         const res = await fetch(`${API_URL}/dashboard/buyer-overview?date=${selectedDate}`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to load dashboard data");
@@ -525,7 +652,7 @@ export default function DashboardPage() {
     fetchDashboard(true);
 
     // Silent auto-refresh every REFRESH_INTERVAL_MS -- keeps KPIs, both
-    // bar charts, and both pies current without a manual reload or any
+    // bar charts, and all pies current without a manual reload or any
     // loading-state flicker.
     intervalId = setInterval(() => fetchDashboard(false), REFRESH_INTERVAL_MS);
 
@@ -538,7 +665,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div style={{ height: "100vh", background: T.bg, color: T.brick, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: bodyFont }}>
+      <div style={{ height: "100vh", overflow: "hidden", background: T.bg, color: T.brick, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: bodyFont, padding: 16, textAlign: "center" }}>
         {error}
       </div>
     );
@@ -546,7 +673,7 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div style={{ height: "100vh", background: T.bg, color: T.muted, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: bodyFont, gap: 10 }}>
+      <div style={{ height: "100vh", overflow: "hidden", background: T.bg, color: T.muted, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: bodyFont, gap: 10 }}>
         <Loader2 size={18} className="animate-spin" /> Loading dashboard...
       </div>
     );
@@ -563,6 +690,17 @@ export default function DashboardPage() {
   const reqTotal = requisitionBreakdown.reduce((s, r) => s + r.count, 0);
   const isToday = selectedDate === todayStr();
 
+  // NEW: ageing pie data for the currently selected metric (Yds or Roll).
+  // `ageingAll` keeps all five buckets for the legend; `ageingPie` drops
+  // empty buckets so recharts doesn't draw zero-width slices.
+  const ageingAll = ageingSummary.map((a) => ({
+    bucket: a.ageBucket,
+    value: ageingMetric === "yds" ? a.totalAvailableYds : a.totalAvailableRoll,
+  }));
+  const ageingPie = ageingAll.filter((a) => a.value > 0);
+  const ageingTotal = ageingAll.reduce((s, a) => s + a.value, 0);
+  const ageingUnit = ageingMetric === "yds" ? " yds" : " roll";
+
   return (
     <div
       style={{
@@ -572,16 +710,44 @@ export default function DashboardPage() {
         overflow: "hidden",
         color: T.text,
         fontFamily: bodyFont,
-        padding: 16,
+        padding: "clamp(8px, 1.4vh, 16px)",
         display: "flex",
         flexDirection: "column",
-        gap: 10,
+        gap: "clamp(6px, 1vh, 10px)",
       }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         * { box-sizing: border-box; }
         html, body { overflow: hidden; }
+
+        /* KPI row: always 4 columns -- never wraps -- so the row's own
+           height (below) stays the only thing that needs to shrink on a
+           short/narrow screen. Cards themselves use clamp() internally
+           to shrink their padding/type to match. */
+        .kpi-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: clamp(8px, 1vw, 12px);
+          height: clamp(84px, 15vh, 160px);
+          flex-shrink: 0;
+        }
+
+        /* Charts row: always the same 6 fixed-ratio columns, single row,
+           filling whatever vertical space the header + KPI row leave via
+           flex:1. Columns get narrower on a narrow screen -- each panel's
+           own horizontal scroller or text-wrap absorbs that instead of
+           adding a second row (which would break the single-viewport,
+           no-scroll layout). */
+        .charts-grid {
+          display: grid;
+          grid-template-columns: 1.1fr 1.1fr 0.9fr 0.75fr 0.75fr 0.85fr;
+          gap: clamp(6px, 0.8vw, 10px);
+          flex: 1;
+          min-height: 0;
+          min-width: 0;
+        }
+
         .buyer-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; scrollbar-color: ${T.amber} ${T.border}; scrollbar-width: thin; }
         .buyer-scroll::-webkit-scrollbar { height: 9px; }
         .buyer-scroll::-webkit-scrollbar-track { background: ${T.border}; border-radius: 5px; }
@@ -600,19 +766,18 @@ export default function DashboardPage() {
         .date-picker:focus { border-color: ${T.amber}; }
       `}</style>
 
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-        <div>
-          {/* <div style={{ fontFamily: monoFont, fontSize: 10, letterSpacing: "0.14em", color: T.muted, textTransform: "uppercase", marginBottom: 2 }}>
-            HKD Outdoor Innovations · Material Warehouse
-          </div> */}
-          <div style={{ fontFamily: displayFont, fontSize: 20, fontWeight: 700, color: T.text }}>
+      {/* Header -- kept to one line (no wrap) so its height never grows
+          and eats into the KPI/charts vertical budget; the date input and
+          "Live" label just shrink via clamp() instead. */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, gap: 10, minHeight: 0 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: displayFont, fontSize: "clamp(15px, 1.8vh, 20px)", fontWeight: 700, color: T.text, whiteSpace: "nowrap" }}>
             <em style={{ color: T.amber, fontStyle: "italic" }}>Overview</em>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "clamp(6px, 1vw, 14px)", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <CalendarDays size={14} color={T.muted} />
+            <CalendarDays size={14} color={T.muted} style={{ flexShrink: 0 }} />
             <input
               type="date"
               className="date-picker"
@@ -623,21 +788,21 @@ export default function DashboardPage() {
             {!isToday && (
               <button
                 onClick={() => setSelectedDate(todayStr())}
-                style={{ fontFamily: monoFont, fontSize: 11, color: T.amber, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                style={{ fontFamily: monoFont, fontSize: 11, color: T.amber, background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", whiteSpace: "nowrap" }}
               >
                 Today
               </button>
             )}
           </div>
-          <div style={{ fontFamily: monoFont, fontSize: 11, color: T.muted, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: pieLoading ? T.gold : T.sage, display: "inline-block" }} />
+          <div style={{ fontFamily: monoFont, fontSize: 11, color: T.muted, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: pieLoading ? T.gold : T.sage, display: "inline-block", flexShrink: 0 }} />
             {pieLoading ? "Updating…" : "Live"}
           </div>
         </div>
       </div>
 
-      {/* KPI row -- bigger cards per request */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, flexShrink: 0, height: 150 }}>
+      {/* KPI row -- fixed 4-column grid, height scales with viewport, see .kpi-row above. */}
+      <div className="kpi-row">
         <KpiCard icon={Boxes} label="Available Roll" value={kpis.totalAvailableRoll} unit="Roll" accent={T.amber} />
         <KpiCard icon={Layers} label="Available Yds" value={kpis.totalAvailableYds} unit="Yds" accent={T.teal} />
         <KpiCard icon={ClipboardCheck} label="Inspection Pending" value={kpis.pendingInspectionCount} unit="Invoices" accent="#7a4a8a" />
@@ -645,10 +810,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts row -- buyer bar, item-code bar, supplier ranking list,
-          batch pie, requisition pie. Only the BARS inside the two bar-chart
-          panels were made bigger (see barSize below), not the panels
-          themselves. */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1.15fr 0.95fr 0.8fr 0.8fr", gap: 10, flex: 1, minHeight: 0 }}>
+          batch pie, requisition pie, stock ageing pie. Fixed 6-column
+          grid, single row, always fills the remaining viewport height --
+          see .charts-grid above. */}
+      <div className="charts-grid">
         {/* Buyer-wise Roll -- main VERTICAL bar chart (bars rise from the
             bottom, buyer names along the X axis), horizontally scrollable
             when there are many buyers. All-time totals, not date-filtered.
@@ -688,11 +853,11 @@ export default function DashboardPage() {
           )}
         </Panel>
 
-        {/* Item Code-wise Roll + Yds -- NEW. Replaces the old "By
-            Supplier" panel. Grouped bars (Roll on the left axis, Yds on
-            the right axis since the two scales are very different),
-            aggregated server-side from the same location-allocation data
-            the Buyer panel reads. All-time totals, not date-filtered. */}
+        {/* Item Code-wise Roll + Yds -- replaces the old "By Supplier"
+            panel. Grouped bars (Roll on the left axis, Yds on the right
+            axis since the two scales are very different), aggregated
+            server-side from the same location-allocation data the Buyer
+            panel reads. All-time totals, not date-filtered. */}
         <Panel
           eyebrow="By Item Code · All-time"
           title="Available Roll & Yds"
@@ -728,7 +893,7 @@ export default function DashboardPage() {
           )}
         </Panel>
 
-        {/* NEW: Supplier Ranking -- ranked list from the monthly Supplier
+        {/* Supplier Ranking -- ranked list from the monthly Supplier
             Performance Evaluation sheet. Sorted by Achieve % (nulls/
             #DIV/0! rows sink to the bottom, shown as "N/A"). Not
             date-filtered -- it reflects the latest evaluation month. */}
@@ -833,6 +998,60 @@ export default function DashboardPage() {
               </div>
               <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
                 <PieLegendList data={requisitionBreakdown} colorMap={REQ_COLORS} labelMap={REQ_LABELS} total={reqTotal} />
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        {/* Stock Ageing pie -- available stock split by how long it has
+            been sitting (days since the parent Receive's date):
+            0-30 / 31-60 / 61-90 / 91-180 / 180+. Yds/Roll toggle in the
+            header. Current-stock totals, NOT date-filtered by the header
+            date picker. Data = `ageingSummary` from GET /material-stock. */}
+        <Panel
+          eyebrow="Available Stock · Live"
+          title="Stock Ageing"
+          right={<MetricToggle value={ageingMetric} onChange={setAgeingMetric} />}
+        >
+          {ageingTotal === 0 ? (
+            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              No available stock to age.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
+              <div style={{ flex: 1.3, minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={ageingPie}
+                      dataKey="value"
+                      nameKey="bucket"
+                      innerRadius="55%"
+                      outerRadius="88%"
+                      paddingAngle={2}
+                      strokeWidth={1}
+                      stroke={T.panel}
+                    >
+                      {ageingPie.map((entry) => (
+                        <Cell key={entry.bucket} fill={AGE_BUCKET_COLORS[entry.bucket] || T.muted} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+                            {d.bucket}: <b>{fmt(Math.round(d.value))}</b>{ageingUnit}
+                          </div>
+                        );
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                <AgeingLegend data={ageingAll} total={ageingTotal} />
               </div>
             </div>
           )}

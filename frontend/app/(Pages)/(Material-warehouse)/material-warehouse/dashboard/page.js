@@ -567,6 +567,26 @@ function SupplierRanking({ suppliers }) {
   );
 }
 
+// Compact header + body wrapper for one pie block living inside the
+// combined "Breakdowns" panel -- same look as Panel's header (eyebrow +
+// title) but sized down since three of these now share one card.
+function MiniPieCard({ eyebrow, title, right, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minWidth: 0, minHeight: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 6, flexShrink: 0, gap: 6, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: monoFont, fontSize: "clamp(8.5px, 0.65vw, 10px)", letterSpacing: "0.1em", color: T.amber, textTransform: "uppercase", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {eyebrow}
+          </div>
+          <div style={{ fontFamily: displayFont, fontSize: "clamp(12px, 1.05vw, 14.5px)", fontWeight: 600, color: T.text }}>{title}</div>
+        </div>
+        {right}
+      </div>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden" }}>{children}</div>
+    </div>
+  );
+}
+
 /* ============================================================
    Main page
    ============================================================ */
@@ -733,15 +753,13 @@ export default function DashboardPage() {
           flex-shrink: 0;
         }
 
-        /* Charts row: always the same 6 fixed-ratio columns, single row,
-           filling whatever vertical space the header + KPI row leave via
-           flex:1. Columns get narrower on a narrow screen -- each panel's
-           own horizontal scroller or text-wrap absorbs that instead of
-           adding a second row (which would break the single-viewport,
-           no-scroll layout). */
+        /* Charts row: now 4 fixed-ratio columns (buyer bar, item-code
+           bar, supplier ranking, and the combined status/requisition/
+           ageing card), single row, filling whatever vertical space the
+           header + KPI row leave via flex:1. */
         .charts-grid {
           display: grid;
-          grid-template-columns: 1.1fr 1.1fr 0.9fr 0.75fr 0.75fr 0.85fr;
+          grid-template-columns: 1.1fr 1.1fr 0.9fr 2.3fr;
           gap: clamp(6px, 0.8vw, 10px);
           flex: 1;
           min-height: 0;
@@ -909,152 +927,176 @@ export default function DashboardPage() {
           <SupplierRanking suppliers={SUPPLIER_RANKING_DATA} />
         </Panel>
 
-        {/* Batch status pie -- date-filtered to the selected date (via the
-            parent Material Receive's date). */}
-        <Panel eyebrow={`Stock Batches · ${selectedDate}`} title="Status Breakdown">
-          {statusBreakdown.length === 0 ? (
-            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-              No batches received on this date.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
-              <div style={{ flex: 1.3, minHeight: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusBreakdown}
-                      dataKey="count"
-                      nameKey="status"
-                      innerRadius="55%"
-                      outerRadius="88%"
-                      paddingAngle={2}
-                      strokeWidth={1}
-                      stroke={T.panel}
-                    >
-                      {statusBreakdown.map((entry) => (
-                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || T.muted} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                            {STATUS_LABELS[d.status] || d.status}: <b>{d.count}</b>
-                          </div>
-                        );
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                <PieLegendList data={statusBreakdown} colorMap={STATUS_COLORS} labelMap={STATUS_LABELS} total={statusTotal} />
-              </div>
-            </div>
-          )}
-        </Panel>
+        {/* Status Breakdown + Fulfillment Status + Stock Ageing --
+            combined into one card as three side-by-side mini pies
+            (divided by a thin border) instead of three separate panels.
+            Each keeps its own data source and behaviour exactly as
+            before: the first two are date-filtered to selectedDate, the
+            ageing pie is live/current-stock with its own Yds/Roll
+            toggle. */}
+        <Panel eyebrow="Batches · Requisitions · Ageing" title="Breakdowns">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "clamp(6px, 0.8vw, 14px)",
+              height: "100%",
+              minWidth: 0,
+            }}
+          >
+            {/* Batch status pie -- date-filtered to the selected date
+                (via the parent Material Receive's date). */}
+            <MiniPieCard eyebrow={`Stock Batches · ${selectedDate}`} title="Status Breakdown">
+              {statusBreakdown.length === 0 ? (
+                <div style={{ color: T.muted, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center" }}>
+                  No batches received on this date.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
+                  <div style={{ flex: 1.3, minHeight: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusBreakdown}
+                          dataKey="count"
+                          nameKey="status"
+                          innerRadius="55%"
+                          outerRadius="88%"
+                          paddingAngle={2}
+                          strokeWidth={1}
+                          stroke={T.panel}
+                        >
+                          {statusBreakdown.map((entry) => (
+                            <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || T.muted} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                              <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+                                {STATUS_LABELS[d.status] || d.status}: <b>{d.count}</b>
+                              </div>
+                            );
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                    <PieLegendList data={statusBreakdown} colorMap={STATUS_COLORS} labelMap={STATUS_LABELS} total={statusTotal} />
+                  </div>
+                </div>
+              )}
+            </MiniPieCard>
 
-        {/* Requisition status pie -- date-filtered to the selected date
-            (via the requisition's own date). */}
-        <Panel eyebrow={`Cutting Requisitions · ${selectedDate}`} title="Fulfillment Status">
-          {requisitionBreakdown.length === 0 ? (
-            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-              No requisitions on this date.
+            {/* Requisition status pie -- date-filtered to the selected
+                date (via the requisition's own date). */}
+            <div style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: "clamp(6px, 0.8vw, 14px)", minWidth: 0, height: "100%" }}>
+              <MiniPieCard eyebrow={`Cutting Requisitions · ${selectedDate}`} title="Fulfillment Status">
+                {requisitionBreakdown.length === 0 ? (
+                  <div style={{ color: T.muted, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center" }}>
+                    No requisitions on this date.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
+                    <div style={{ flex: 1.3, minHeight: 0 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={requisitionBreakdown}
+                            dataKey="count"
+                            nameKey="status"
+                            innerRadius="55%"
+                            outerRadius="88%"
+                            paddingAngle={2}
+                            strokeWidth={1}
+                            stroke={T.panel}
+                          >
+                            {requisitionBreakdown.map((entry) => (
+                              <Cell key={entry.status} fill={REQ_COLORS[entry.status] || T.muted} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const d = payload[0].payload;
+                              return (
+                                <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+                                  {REQ_LABELS[d.status] || d.status}: <b>{d.count}</b>
+                                </div>
+                              );
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                      <PieLegendList data={requisitionBreakdown} colorMap={REQ_COLORS} labelMap={REQ_LABELS} total={reqTotal} />
+                    </div>
+                  </div>
+                )}
+              </MiniPieCard>
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
-              <div style={{ flex: 1.3, minHeight: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={requisitionBreakdown}
-                      dataKey="count"
-                      nameKey="status"
-                      innerRadius="55%"
-                      outerRadius="88%"
-                      paddingAngle={2}
-                      strokeWidth={1}
-                      stroke={T.panel}
-                    >
-                      {requisitionBreakdown.map((entry) => (
-                        <Cell key={entry.status} fill={REQ_COLORS[entry.status] || T.muted} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                            {REQ_LABELS[d.status] || d.status}: <b>{d.count}</b>
-                          </div>
-                        );
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                <PieLegendList data={requisitionBreakdown} colorMap={REQ_COLORS} labelMap={REQ_LABELS} total={reqTotal} />
-              </div>
-            </div>
-          )}
-        </Panel>
 
-        {/* Stock Ageing pie -- available stock split by how long it has
-            been sitting (days since the parent Receive's date):
-            0-30 / 31-60 / 61-90 / 91-180 / 180+. Yds/Roll toggle in the
-            header. Current-stock totals, NOT date-filtered by the header
-            date picker. Data = `ageingSummary` from GET /material-stock. */}
-        <Panel
-          eyebrow="Available Stock · Live"
-          title="Stock Ageing"
-          right={<MetricToggle value={ageingMetric} onChange={setAgeingMetric} />}
-        >
-          {ageingTotal === 0 ? (
-            <div style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-              No available stock to age.
+            {/* Stock Ageing pie -- available stock split by how long it
+                has been sitting (days since the parent Receive's date):
+                0-30 / 31-60 / 61-90 / 91-180 / 180+. Yds/Roll toggle in
+                its own mini-header. Current-stock totals, NOT
+                date-filtered by the header date picker. Data =
+                `ageingSummary` from GET /material-stock. */}
+            <div style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: "clamp(6px, 0.8vw, 14px)", minWidth: 0, height: "100%" }}>
+              <MiniPieCard
+                eyebrow="Available Stock · Live"
+                title="Stock Ageing"
+                right={<MetricToggle value={ageingMetric} onChange={setAgeingMetric} />}
+              >
+                {ageingTotal === 0 ? (
+                  <div style={{ color: T.muted, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center" }}>
+                    No available stock to age.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
+                    <div style={{ flex: 1.3, minHeight: 0 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={ageingPie}
+                            dataKey="value"
+                            nameKey="bucket"
+                            innerRadius="55%"
+                            outerRadius="88%"
+                            paddingAngle={2}
+                            strokeWidth={1}
+                            stroke={T.panel}
+                          >
+                            {ageingPie.map((entry) => (
+                              <Cell key={entry.bucket} fill={AGE_BUCKET_COLORS[entry.bucket] || T.muted} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const d = payload[0].payload;
+                              return (
+                                <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+                                  {d.bucket}: <b>{fmt(Math.round(d.value))}</b>{ageingUnit}
+                                </div>
+                              );
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                      <AgeingLegend data={ageingAll} total={ageingTotal} />
+                    </div>
+                  </div>
+                )}
+              </MiniPieCard>
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 4 }}>
-              <div style={{ flex: 1.3, minHeight: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={ageingPie}
-                      dataKey="value"
-                      nameKey="bucket"
-                      innerRadius="55%"
-                      outerRadius="88%"
-                      paddingAngle={2}
-                      strokeWidth={1}
-                      stroke={T.panel}
-                    >
-                      {ageingPie.map((entry) => (
-                        <Cell key={entry.bucket} fill={AGE_BUCKET_COLORS[entry.bucket] || T.muted} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 6, padding: "7px 11px", fontFamily: bodyFont, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                            {d.bucket}: <b>{fmt(Math.round(d.value))}</b>{ageingUnit}
-                          </div>
-                        );
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                <AgeingLegend data={ageingAll} total={ageingTotal} />
-              </div>
-            </div>
-          )}
+          </div>
         </Panel>
       </div>
     </div>

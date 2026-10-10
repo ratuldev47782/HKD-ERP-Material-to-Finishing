@@ -1,4 +1,5 @@
-// seedRealHistoryData.js
+// backend/seedDashboardDemo.js
+
 //
 // Seeds the API with the ACTUAL historical rack-card rows you pasted
 // (Decathlon - Woven receiving/issuing history), instead of synthetic

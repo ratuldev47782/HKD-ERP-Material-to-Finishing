@@ -1,4 +1,4 @@
-// backend/src/routes/auth.routes.js
+// backend/src/routes/auth/auth.routes.js
 
 import { Router } from "express";
 import {
@@ -8,7 +8,7 @@ import {
   updateUser,
   changePassword,
   getAllUsers,
-} from "../controllers/auth.controllers.js";
+} from "../../controllers/auth/auth.controllers.js";
 
 const router = Router();
 

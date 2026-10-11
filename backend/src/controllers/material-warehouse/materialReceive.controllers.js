@@ -1,7 +1,7 @@
-// backend/src/controllers/materialReceive.controllers.js
+// backend/src/controllers/material-warehouse/materialReceive.controllers.js
 
 import { and, desc, eq, inArray, like } from "drizzle-orm";
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 
 const { materialReceives, materialReceiveStyles, materialReceiveItems, materialReceiveItemLocations, stockHistory } = schema;
 

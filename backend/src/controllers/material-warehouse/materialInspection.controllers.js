@@ -1,6 +1,6 @@
-// backend/src/controllers/materialInspection.controllers.js
+// backend/src/controllers/material-warehouse/materialInspection.controllers.js
 
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 import { eq, desc, inArray, ne } from "drizzle-orm";
 
 const { materialReceives, materialReceiveItems, materialReceiveStyles, stockHistory } = schema;

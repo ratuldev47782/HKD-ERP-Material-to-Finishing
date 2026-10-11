@@ -1,4 +1,4 @@
-// backend/src/controllers/dashboard.controllers.js
+// backend/src/controllers/material-warehouse/dashboard.controllers.js
 //
 // Controller for the main Dashboard overview screen.
 //
@@ -31,7 +31,7 @@
 // Nothing here writes to the database -- pure read + aggregate, same as
 // the existing materialRackView controller.
 
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 
 const {
   materialReceives,

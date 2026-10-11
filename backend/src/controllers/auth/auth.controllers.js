@@ -1,8 +1,8 @@
-// backend/src/controllers/auth.controllers.js
+// backend/src/controllers/auth/auth.controllers.js
 
 import { eq } from "drizzle-orm";
-import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
-import { db, schema } from "../db/db.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../../utils/cloudinary.js";
+import { db, schema } from "../../db/db.js";
 
 const { users } = schema;
 

@@ -1,4 +1,4 @@
-// backend/src/controllers/materialRackView.controllers.js
+// backend/src/controllers/material-warehouse/materialRackView.controllers.js
 
 
 //
@@ -9,7 +9,7 @@
 // tables involved are small and this keeps every number traceable back
 // to a real row instead of hidden behind a query.
 
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 import { desc } from "drizzle-orm";
 
 const {

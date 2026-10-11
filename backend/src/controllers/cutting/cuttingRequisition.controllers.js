@@ -1,4 +1,4 @@
-// backend/src/controllers/cuttingRequisition.controllers.js
+// backend/src/controllers/cutting/cuttingRequisition.controllers.js
 
 //
 // Used by the CUTTING side page (Cutting -> Cutting Requisition).
@@ -12,7 +12,7 @@
 //     requestedYds = Pcs x Consumption x (1 + WastagePercentage / 100)
 // Roll is a Material Warehouse-only concept, decided at issue time.
 
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 import { eq, like, and, inArray, desc, ne } from "drizzle-orm";
 
 const { cuttingRequisitions, cuttingRequisitionItems, cuttingIssues } = schema;

@@ -1,4 +1,4 @@
-// backend/src/routes/cuttingRequisition.routes.js
+// backend/src/routes/cutting/cuttingRequisition.routes.js
 
 import { Router } from "express";
 import {
@@ -7,7 +7,7 @@ import {
   createRequisition,
   updateRequisition,
   deleteRequisition,
-} from "../controllers/cuttingRequisition.controllers.js";
+} from "../../controllers/cutting/cuttingRequisition.controllers.js";
 
 const router = Router();
 

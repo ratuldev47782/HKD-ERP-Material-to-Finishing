@@ -1,4 +1,4 @@
-// backend/src/controllers/cuttingIssue.controllers.js
+// backend/src/controllers/material-warehouse/cuttingIssue.controllers.js
 
 //
 // Used by the MATERIAL WAREHOUSE side page (Material-warehouse -> Cutting
@@ -44,7 +44,7 @@
 // style already used for search/filter matching in
 // materialStock.controllers.js.
 
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 import { eq, desc, ne, inArray } from "drizzle-orm";
 
 const {

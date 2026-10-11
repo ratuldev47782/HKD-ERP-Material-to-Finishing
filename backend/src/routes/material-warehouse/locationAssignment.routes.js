@@ -1,4 +1,4 @@
-// backend/src/routes/locationAssignment.routes.js
+// backend/src/routes/material-warehouse/locationAssignment.routes.js
 
 import { Router } from "express";
 import {
@@ -6,7 +6,7 @@ import {
   assignLocation,
   updateAllocation,
   deleteAllocation,
-} from "../controllers/locationAssignment.controllers.js";
+} from "../../controllers/material-warehouse/locationAssignment.controllers.js";
 
 const router = Router();
 

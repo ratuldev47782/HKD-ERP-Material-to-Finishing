@@ -1,4 +1,4 @@
-// backend/src/routes/materialInspection.routes.js
+// backend/src/routes/material-warehouse/materialInspection.routes.js
 
 import { Router } from "express";
 import {
@@ -8,7 +8,7 @@ import {
   getHistory,
   getItemById,
   inspectItem,
-} from "../controllers/materialInspection.controllers.js";
+} from "../../controllers/material-warehouse/materialInspection.controllers.js";
 
 const router = Router();
 

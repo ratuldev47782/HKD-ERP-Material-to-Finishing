@@ -3,16 +3,16 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import authRoutes from "./routes/auth.routes.js";
-import cuttingIssueRoutes from "./routes/cuttingIssue.routes.js"; // ← new
-import cuttingRequisitionRoutes from "./routes/cuttingRequisition.routes.js"; // ← new
-import dashboardRoutes from "./routes/dashboard.routes.js";
-import locationAssignmentRoutes from "./routes/locationAssignment.routes.js";
-import materialInspectionRoutes from "./routes/materialInspection.routes.js"; // ← new
-import materialRackView from "./routes/materialRackView.routes.js";
-import materialReceiveRoutes from "./routes/materialReceive.routes.js";
-import materialStockRoutes from "./routes/materialStock.routes.js";
-import materialImportRoutes from "./routes/materialImport.routes.js";
+import authRoutes from "./routes/auth/auth.routes.js";
+import cuttingIssueRoutes from "./routes/material-warehouse/cuttingIssue.routes.js"; // ← new
+import cuttingRequisitionRoutes from "./routes/cutting/cuttingRequisition.routes.js"; // ← new
+import dashboardRoutes from "./routes/material-warehouse/dashboard.routes.js";
+import locationAssignmentRoutes from "./routes/material-warehouse/locationAssignment.routes.js";
+import materialInspectionRoutes from "./routes/material-warehouse/materialInspection.routes.js"; // ← new
+import materialRackView from "./routes/material-warehouse/materialRackView.routes.js";
+import materialReceiveRoutes from "./routes/material-warehouse/materialReceive.routes.js";
+import materialStockRoutes from "./routes/material-warehouse/materialStock.routes.js";
+import materialImportRoutes from "./routes/material-warehouse/materialImport.routes.js";
 
 dotenv.config();
 

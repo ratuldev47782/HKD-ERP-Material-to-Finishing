@@ -1,4 +1,4 @@
-// backend/src/routes/materialReceive.routes.js
+// backend/src/routes/material-warehouse/materialReceive.routes.js
 
 import { Router } from "express";
 import {
@@ -7,7 +7,7 @@ import {
   createMaterialReceive,
   updateMaterialReceive,
   deleteMaterialReceive,
-} from "../controllers/materialReceive.controllers.js";
+} from "../../controllers/material-warehouse/materialReceive.controllers.js";
 
 const router = Router();
 

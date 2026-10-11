@@ -1,10 +1,10 @@
-// backend/src/routes/materialImport.routes.js
+// backend/src/routes/material-warehouse/materialImport.routes.js
 
 
 import { Router } from "express";
 import express from "express";
 import multer from "multer";
-import { importMaterialStock, commitMaterialStock } from "../controllers/materialImport.controllers.js";
+import { importMaterialStock, commitMaterialStock } from "../../controllers/material-warehouse/materialImport.controllers.js";
 
 // Memory storage -- the file never touches disk, it's parsed straight
 // out of the buffer in the controller. 25MB should comfortably cover

@@ -1,6 +1,6 @@
-// backend/src/controllers/locationAssignment.controllers.js
+// backend/src/controllers/material-warehouse/locationAssignment.controllers.js
 
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 import { eq, asc, inArray } from "drizzle-orm";
 
 const { materialReceives, materialReceiveItems, materialReceiveItemLocations, stockHistory } = schema;

@@ -1,4 +1,4 @@
-// backend/src/routes/cuttingIssue.routes.js
+// backend/src/routes/material-warehouse/cuttingIssue.routes.js
 
 import { Router } from "express";
 import {
@@ -8,7 +8,7 @@ import {
   getIssueHistory,
   issueStock,
   issueStockBatch,
-} from "../controllers/cuttingIssue.controllers.js";
+} from "../../controllers/material-warehouse/cuttingIssue.controllers.js";
 
 const router = Router();
 

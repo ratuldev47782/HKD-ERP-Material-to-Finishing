@@ -1,14 +1,14 @@
-// backend/src/routes/dashboard.routes.js
+// backend/src/routes/material-warehouse/dashboard.routes.js
 //
 // Dashboard route for the main buyer overview screen.
 //
 // This file is mounted from backend/src/app.js as:
 //
-//     import dashboardRoutes from "./routes/dashboard.routes.js";
+//     import dashboardRoutes from "./routes/material-warehouse/dashboard.routes.js";
 //     app.use("/dashboard", dashboardRoutes);
 
 import { Router } from "express";
-import { dashboardOverview } from "../controllers/dashboard.controllers.js";
+import { dashboardOverview } from "../../controllers/material-warehouse/dashboard.controllers.js";
 
 const router = Router();
 

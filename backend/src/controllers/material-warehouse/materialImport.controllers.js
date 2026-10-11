@@ -1,4 +1,4 @@
-// backend/src/controllers/materialImport.controllers.js
+// backend/src/controllers/material-warehouse/materialImport.controllers.js
 //
 // IMPORT POLICY (unchanged): nothing blocks an import. Every row in the
 // sheet gets imported and lands directly in stock, whatever the data
@@ -55,7 +55,7 @@
 
 import { eq } from "drizzle-orm";
 import * as XLSX from "xlsx";
-import { db, schema } from "../db/db.js";
+import { db, schema } from "../../db/db.js";
 
 const { materialReceives, materialReceiveStyles, materialReceiveItems, materialReceiveItemLocations, stockHistory } = schema;
 

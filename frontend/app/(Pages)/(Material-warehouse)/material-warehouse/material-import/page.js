@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
-
+import DataResetCard from "./DataResetCard.js";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const PAGE_SIZE = 50;
 
@@ -348,8 +348,9 @@ export default function MaterialImportPage() {
           <StepDot index={2} active={step === 2} done={step > 2} label="Review (optional)" />
           <ArrowRight size={14} className="text-[#a08060]" />
           <StepDot index={3} active={step === 3} done={false} label="Imported" />
+          
         </div>
-
+<DataResetCard />
         {error && (
           <div className="rounded-lg bg-[#a04a3a]/10 border border-[#a04a3a]/25 text-[#7a3325] dark:text-[#e08a78] text-xs px-3 py-2">
             <b>Error:</b> {error}

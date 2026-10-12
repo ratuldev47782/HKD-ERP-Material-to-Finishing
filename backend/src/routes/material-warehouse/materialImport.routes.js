@@ -5,7 +5,7 @@ import { Router } from "express";
 import express from "express";
 import multer from "multer";
 import { importMaterialStock, commitMaterialStock } from "../../controllers/material-warehouse/materialImport.controllers.js";
-
+import { resetWarehouseData } from "../../controllers/material-warehouse/dataReset.controllers.js";
 // Memory storage -- the file never touches disk, it's parsed straight
 // out of the buffer in the controller. 25MB should comfortably cover
 // even a very large legacy workbook with many sheets.
@@ -21,6 +21,7 @@ const router = Router();
 // Nothing is written to the DB by this route.
 router.post("/material-import", upload.single("file"), importMaterialStock);
 
+router.post("/data-reset",  resetWarehouseData);
 // POST /material-import/commit
 // application/json { records: [...] } -> inserts every record.
 // This is the only route that writes to the DB. Body can get large for

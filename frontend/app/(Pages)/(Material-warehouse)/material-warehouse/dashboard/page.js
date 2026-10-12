@@ -730,7 +730,7 @@ export default function DashboardPage() {
         overflow: "hidden",
         color: T.text,
         fontFamily: bodyFont,
-        padding: "clamp(8px, 1.4vh, 16px)",
+        padding: "clamp(8px, 1.4vh, 16px) clamp(8px, 1.4vh, 16px) clamp(24px, 5vh, 48px)",
         display: "flex",
         flexDirection: "column",
         gap: "clamp(6px, 1vh, 10px)",
@@ -766,12 +766,12 @@ export default function DashboardPage() {
           min-width: 0;
         }
 
-        .buyer-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; scrollbar-color: ${T.amber} ${T.border}; scrollbar-width: thin; }
+        .buyer-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 14px; scrollbar-color: ${T.amber} ${T.border}; scrollbar-width: thin; }
         .buyer-scroll::-webkit-scrollbar { height: 9px; }
         .buyer-scroll::-webkit-scrollbar-track { background: ${T.border}; border-radius: 5px; }
         .buyer-scroll::-webkit-scrollbar-thumb { background: ${T.amber}; border-radius: 5px; }
         .buyer-scroll::-webkit-scrollbar-thumb:hover { background: ${T.amberDark}; }
-        .itemcode-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; scrollbar-color: ${T.slate} ${T.border}; scrollbar-width: thin; }
+        .itemcode-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 14px; scrollbar-color: ${T.slate} ${T.border}; scrollbar-width: thin; }
         .itemcode-scroll::-webkit-scrollbar { height: 9px; }
         .itemcode-scroll::-webkit-scrollbar-track { background: ${T.border}; border-radius: 5px; }
         .itemcode-scroll::-webkit-scrollbar-thumb { background: ${T.slate}; border-radius: 5px; }
@@ -850,17 +850,16 @@ export default function DashboardPage() {
             <div className="buyer-scroll" onWheel={handleWheelScroll}>
               <div style={{ height: "100%", minWidth: Math.max(buyerStock.length * 108, 100) }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={buyerStock} margin={{ left: 4, right: 16, top: 4, bottom: 4 }} barCategoryGap="20%">
+                  <BarChart data={buyerStock} margin={{ left: 4, right: 16, top: 4, bottom: 28 }} barCategoryGap="20%">
                     <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
                     <XAxis
-                      dataKey="buyer"
-                      tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
-                      axisLine={{ stroke: T.border }}
-                      tickLine={false}
-                      interval={0}
-                    // No tickFormatter here on purpose -- buyer names must
-                    // always render in full, never truncated with "…".
-                    />
+  dataKey="buyer"
+  height={36}
+  tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
+  axisLine={{ stroke: T.border }}
+  tickLine={false}
+  interval={0}
+/>
                     <YAxis type="number" tick={{ fill: T.muted, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={44} />
                     <Tooltip content={<CustomTooltip unit=" roll" />} cursor={{ fill: "rgba(184,122,74,0.06)" }} />
                     <Bar dataKey="roll" name="Roll" fill={T.amber} radius={[5, 5, 0, 0]} barSize={54} />
@@ -889,16 +888,17 @@ export default function DashboardPage() {
             <div className="itemcode-scroll" onWheel={handleWheelScroll}>
               <div style={{ height: "100%", minWidth: Math.max(itemCodeStock.length * 130, 100) }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={itemCodeStock} margin={{ left: 4, right: 8, top: 4, bottom: 4 }} barCategoryGap="20%" barGap={4}>
+                  <BarChart data={itemCodeStock} margin={{ left: 4, right: 8, top: 4, bottom: 28 }} barCategoryGap="20%" barGap={4}>
                     <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
                     <XAxis
-                      dataKey="itemCode"
-                      tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
-                      axisLine={{ stroke: T.border }}
-                      tickLine={false}
-                      interval={0}
-                      tickFormatter={(v) => (typeof v === "string" && v.length > 10 ? `${v.slice(0, 10)}…` : v)}
-                    />
+  dataKey="itemCode"
+  height={36}
+  tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
+  axisLine={{ stroke: T.border }}
+  tickLine={false}
+  interval={0}
+  tickFormatter={(v) => (typeof v === "string" && v.length > 10 ? `${v.slice(0, 10)}…` : v)}
+/>
                     <YAxis yAxisId="roll" type="number" tick={{ fill: T.amber, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={40} />
                     <YAxis yAxisId="yds" orientation="right" type="number" tick={{ fill: T.slate, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={48} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(61,106,138,0.06)" }} />

@@ -1,37 +1,13 @@
 // frontend/app/(Pages)/(Material-warehouse)/material-warehouse/dashboard/page.js
 //
-// SINGLE-VIEWPORT RESPONSIVE PASS
-// --------------------------------
-// Same data, same panels, same fetch logic, same white theme. Stays a
-// strict single-viewport dashboard -- `height:100vh; overflow:hidden`,
-// exactly like before, NO page scrollbar on any screen size -- but every
-// size/spacing that used to be a fixed pixel value now scales with the
-// viewport instead, so the same fixed layout (4 KPI cards in a row, 6
-// panels in a row) fits and stays readable on a small laptop just as
-// well as an ultra-wide monitor.
+// SINGLE-VIEWPORT RESPONSIVE DASHBOARD
+// -------------------------------------
+// Strict single-viewport dashboard (`height:100vh; overflow:hidden`), every
+// size/spacing scales with the viewport via clamp().
 //
-// What changed, mechanically:
-//   - KPI row: still always 4 columns (`repeat(4, 1fr)`), but its row
-//     height is now `clamp(min, vh, max)` -- a proportional slice of the
-//     viewport height -- instead of a fixed 150px.
-//   - Charts row: still always the same 6 fixed-ratio columns
-//     (1.1fr 1.1fr 0.9fr 0.75fr 0.75fr 0.85fr) in a single row, filling
-//     whatever vertical space is left via `flex:1`. Columns simply get
-//     narrower on a narrow screen -- each panel's own horizontal
-//     scroller (buyer/item-code bars) or text wrap (supplier names)
-//     absorbs that, so nothing needs a second row.
-//   - Every font-size / padding on the layout-critical bits (page
-//     padding, KPI card padding + value size, Panel padding + eyebrow/
-//     title size, header title) is a `clamp(min, vw/vh, max)` value, so
-//     text and spacing shrink smoothly on a smaller screen instead of
-//     overflowing or forcing a scrollbar.
-//   - Panel/KpiCard internals (charts, legends, supplier list, ageing
-//     pie, buyer/item-code horizontal scrollers) are untouched -- same
-//     recharts config, same colors, same dummy-data / live-fetch logic.
-//
-// Everything else (the two endpoints, the 5s auto-refresh, the ageing
-// bucket logic, the dummy Woven-buyer injection, the supplier ranking
-// data) is byte-for-byte the same as before.
+// LATEST CHANGE: Supplier Ranking now uses the Sep-26 "Suppliers Performance
+// Evaluation" sheets (one for Decathlon, one for Columbia) and has a
+// Decathlon / Columbia switch in the panel header.
 
 "use client";
 
@@ -90,8 +66,7 @@ function normalizeAgeing(list) {
 // TEMP: frontend-only DUMMY DATA, used only as an initial placeholder so
 // every panel has something to render before the first fetch resolves.
 // Every field here gets overwritten by the real GET
-// /dashboard/buyer-overview response (kpis, buyerStock, itemCodeStock,
-// statusBreakdown, requisitionBreakdown are ALL live now).
+// /dashboard/buyer-overview response.
 // ============================================================
 const DUMMY_DATA = {
   kpis: {
@@ -124,7 +99,7 @@ const DUMMY_DATA = {
     { status: "partial", count: 12 },
     { status: "pending", count: 8 },
   ],
-  // Item Code-wise Available Roll + Yds (replaces the old By Supplier chart).
+  // Item Code-wise Available Roll + Yds.
   itemCodeStock: [
     { itemCode: "PDM-1042", roll: 980, yds: 182300 },
     { itemCode: "PDM-2210", roll: 720, yds: 138900 },
@@ -159,10 +134,7 @@ const DUMMY_WOVEN_BUYERS = [
 ];
 
 // Loosely matches the real "Decathlon Woven" buyer regardless of exact
-// spacing/casing/punctuation in the DB (e.g. "Decathlon ( W )",
-// "Decathlon Woven", "DECATHLON(W)", "Decathlon - W" all match) --
-// normalize by lowercasing and stripping everything except letters, then
-// require both "decathlon" and a lone "w" token to be present.
+// spacing/casing/punctuation in the DB.
 function isDecathlonWoven(buyerName) {
   if (!buyerName) return false;
   const raw = buyerName.toLowerCase();
@@ -190,26 +162,30 @@ function injectDummyWovenBuyers(buyerStock) {
 }
 
 // ============================================================
-// NEW: Supplier Ranking source data -- lifted directly from the
-// "Suppliers Performance Evaluation" xlsx (Month: Aug 2026). Rows where
-// the sheet had #DIV/0! (no consignments that month, so quality/
-// delivery/service/achieve% are all undefined) are kept with
-// achievePct: null and grade: null so they render as "N/A" and sort to
-// the bottom, instead of being silently dropped.
+// Supplier Ranking source data -- from the "Suppliers Performance
+// Evaluation" sheets (Month: Sep 2026), one sheet per buyer.
+// Rows with #DIV/0! (no consignments) keep achievePct: null and
+// grade: null so they render as "N/A" and sink to the bottom.
 // ============================================================
+const SUPPLIER_MONTH_LABEL = "Sep 2026";
+const SUPPLIER_BUYERS = ["Decathlon", "Columbia"];
+
 const SUPPLIER_RANKING_DATA = [
-  { code: "S-01", name: "Sanli", country: "China", buyer: "Decathlon", consignments: 6, achievePct: 96.67, grade: "A" },
-  { code: "S-08", name: "Formosa BD (Knit)", country: "Bangladesh", buyer: "Decathlon", consignments: 6, achievePct: 96.42, grade: "A" },
-  { code: "S-03", name: "Well Dyeing", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 96, grade: "A" },
-  { code: "S-04", name: "Foshan", country: "Bangladesh", buyer: "Decathlon", consignments: 4, achievePct: 96, grade: "A" },
-  { code: "S-06", name: "Dry tex", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 96, grade: "A" },
-  { code: "S-11", name: "Taihua", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 96, grade: "A" },
+  // ---- Columbia ----
+  { code: "S-01", name: "Formosa Viet", country: "China", buyer: "Columbia", consignments: 5, achievePct: 86.8, grade: "B" },
+  { code: "S-02", name: "Formosa BD", country: "Bangladesh", buyer: "Columbia", consignments: 8, achievePct: 94.63, grade: "B" },
+  { code: "S-03", name: "T.H.T", country: "China", buyer: "Columbia", consignments: 1, achievePct: 94, grade: "B" },
+  { code: "S-04", name: "Savar Dyeing", country: "Bangladesh", buyer: "Columbia", consignments: 0, achievePct: null, grade: null },
+  { code: "S-05", name: "Yarn Jazz", country: "China", buyer: "Columbia", consignments: 1, achievePct: 90, grade: "B" },
+  { code: "S-06", name: "Apex", country: "China", buyer: "Columbia", consignments: 0, achievePct: null, grade: null },
+  { code: "S-07", name: "Shinhan", country: "China", buyer: "Columbia", consignments: 3, achievePct: 93.67, grade: "B" },
+
+  // ---- Decathlon ----
+  { code: "S-10", name: "Grand Textile", country: "Vietnam", buyer: "Decathlon", consignments: 2, achievePct: 96, grade: "A" },
+  { code: "S-11", name: "Taihua", country: "China", buyer: "Decathlon", consignments: 1, achievePct: 100, grade: "A" },
   { code: "S-12", name: "Texwell", country: "China", buyer: "Decathlon", consignments: 0, achievePct: 96, grade: "A" },
-  { code: "S-09", name: "Haren", country: "India", buyer: "Decathlon", consignments: 2, achievePct: 94, grade: "B" },
   { code: "S-13", name: "Suntion", country: "China", buyer: "Decathlon", consignments: 2, achievePct: 94, grade: "B" },
-  { code: "S-10", name: "Grand Textile", country: "Vietnam", buyer: "Decathlon", consignments: 1, achievePct: 92, grade: "B" },
-  { code: "S-07", name: "Everest Th", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
-  { code: "S-14", name: "THT", country: "China", buyer: "Decathlon", consignments: 1, achievePct: null, grade: null },
+  { code: "S-14", name: "THT", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
   { code: "S-15", name: "Deyong", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
   { code: "S-16", name: "Impress Newtex", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
   { code: "S-17", name: "Lipeng", country: "China", buyer: "Decathlon", consignments: 0, achievePct: null, grade: null },
@@ -264,9 +240,7 @@ const fmt = (v) => {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
-// Server-string-format "today" (YYYY-MM-DD), matching what the backend's
-// `date` (mode: "string") columns store -- and what the <input type="date">
-// value format already is, so no conversion needed either direction.
+// Server-string-format "today" (YYYY-MM-DD).
 const todayStr = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -275,14 +249,11 @@ const todayStr = () => {
   return `${y}-${m}-${day}`;
 };
 
-// Lets a plain vertical mouse-wheel scroll these panels horizontally --
-// without this, a normal wheel (no shift held) does nothing on a
-// horizontal-only overflow container and the extra buyers/item codes are
-// only reachable by dragging the thin scrollbar itself.
+// Lets a plain vertical mouse-wheel scroll these panels horizontally.
 const handleWheelScroll = (e) => {
-  if (e.deltaY === 0) return; // already a horizontal gesture (trackpad/shift+wheel) -- let the browser handle it
+  if (e.deltaY === 0) return;
   const el = e.currentTarget;
-  if (el.scrollWidth <= el.clientWidth) return; // nothing to scroll
+  if (el.scrollWidth <= el.clientWidth) return;
   e.preventDefault();
   el.scrollLeft += e.deltaY;
 };
@@ -321,9 +292,6 @@ function Panel({ eyebrow, title, right, children }) {
   );
 }
 
-// KPI cards -- sizes now scale with clamp() instead of fixed px, so they
-// stay readable whether the row is 4-across on a monitor or stacked on a
-// phone.
 function KpiCard({ icon: Icon, label, value, unit, accent }) {
   return (
     <div
@@ -388,10 +356,8 @@ function PieLegendList({ data, colorMap, labelMap, total }) {
   );
 }
 
-// NEW: legend for the Stock Ageing pie. Same look as PieLegendList, but
-// values are formatted with thousands separators (yards run into the
-// hundreds of thousands) and all five buckets are always listed -- an
-// empty bucket shows 0 rather than disappearing.
+// Legend for the Stock Ageing pie. All five buckets are always listed --
+// an empty bucket shows 0 rather than disappearing.
 function AgeingLegend({ data, total }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 7, justifyContent: "center" }}>
@@ -408,9 +374,11 @@ function AgeingLegend({ data, total }) {
   );
 }
 
-// NEW: small Yds / Roll switch for the Stock Ageing panel header.
-function MetricToggle({ value, onChange }) {
-  const opts = [
+// Reusable segmented switch. Defaults to Yds / Roll (Stock Ageing), but
+// accepts a custom `options` array of { key, label } -- the Supplier
+// Ranking panel uses it for Decathlon / Columbia.
+function MetricToggle({ value, onChange, options }) {
+  const opts = options || [
     { key: "yds", label: "Yds" },
     { key: "roll", label: "Roll" },
   ];
@@ -442,15 +410,8 @@ function MetricToggle({ value, onChange }) {
   );
 }
 
-// NEW: Supplier Ranking panel -- simple ranked list, sorted by
-// achievePct descending (nulls/N/A sink to the bottom). Each row shows
-// rank, supplier name + country, and a grade badge with the achieve %.
-//
-// All text here is small + bold and sized with clamp() so it scales down
-// on small screens. The supplier name is NEVER truncated: no ellipsis, no
-// nowrap, no overflow:hidden on the name -- long names simply wrap onto
-// as many lines as they need (overflowWrap:"anywhere" also breaks a
-// single very long word if it has to).
+// Supplier Ranking list -- sorted by achievePct descending (nulls/N/A sink
+// to the bottom). Supplier name is never truncated; long names wrap.
 function SupplierRanking({ suppliers }) {
   const ranked = [...suppliers].sort((a, b) => {
     if (a.achievePct == null && b.achievePct == null) return 0;
@@ -469,7 +430,7 @@ function SupplierRanking({ suppliers }) {
               key={s.code}
               style={{
                 display: "flex",
-                alignItems: "flex-start", // name can wrap to several lines, so align to the top
+                alignItems: "flex-start",
                 gap: 8,
                 padding: "6px 8px",
                 borderRadius: 7,
@@ -493,7 +454,7 @@ function SupplierRanking({ suppliers }) {
                 {i + 1}
               </span>
 
-              {/* Name + country (name always fully visible, wraps if long) */}
+              {/* Name + country */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -521,7 +482,7 @@ function SupplierRanking({ suppliers }) {
                     overflowWrap: "anywhere",
                   }}
                 >
-                  {s.country} · {s.consignments} consignment{s.consignments === 1 ? "" : "s"}
+                  {s.country}
                 </div>
               </div>
 
@@ -567,9 +528,8 @@ function SupplierRanking({ suppliers }) {
   );
 }
 
-// Compact header + body wrapper for one pie block living inside the
-// combined "Breakdowns" panel -- same look as Panel's header (eyebrow +
-// title) but sized down since three of these now share one card.
+// Compact header + body wrapper for one pie block inside the combined
+// "Breakdowns" panel.
 function MiniPieCard({ eyebrow, title, right, children }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minWidth: 0, minHeight: 0 }}>
@@ -595,14 +555,15 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   // Drives ONLY statusBreakdown + requisitionBreakdown on the backend.
-  // Defaults to today; user can pick any other date from the header.
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [pieLoading, setPieLoading] = useState(false);
 
-  // NEW: Stock Ageing pie state. `ageingSummary` always holds all five
-  // buckets (see normalizeAgeing); `ageingMetric` is the Yds/Roll toggle.
+  // Stock Ageing pie state.
   const [ageingSummary, setAgeingSummary] = useState(DUMMY_AGEING);
   const [ageingMetric, setAgeingMetric] = useState("yds");
+
+  // NEW: which buyer's supplier ranking is shown (Decathlon / Columbia).
+  const [supplierBuyer, setSupplierBuyer] = useState("Decathlon");
 
   useEffect(() => {
     let cancelled = false;
@@ -612,10 +573,7 @@ export default function DashboardPage() {
     // render on first paint.
     if (!data) setData(DUMMY_DATA);
 
-    // NEW: pulls ONLY the `ageingSummary` field out of GET /material-stock.
-    // Kept in its own try/catch so a failure here (or a slow response)
-    // never affects the rest of the dashboard -- the pie just keeps its
-    // last good values.
+    // Pulls ONLY the `ageingSummary` field out of GET /material-stock.
     const fetchAgeing = async () => {
       try {
         const res = await fetch(`${API_URL}/material-stock`, { credentials: "include" });
@@ -628,9 +586,6 @@ export default function DashboardPage() {
       }
     };
 
-    // isFirstLoad -> true only for the very first fetch after mount / a
-    // date change, so the "Updating…" indicator only flashes once per
-    // date selection, not on every silent 5s poll.
     const fetchDashboard = async (isFirstLoad) => {
       if (isFirstLoad) setPieLoading(true);
 
@@ -643,9 +598,7 @@ export default function DashboardPage() {
         const json = await res.json();
         if (cancelled) return;
 
-        // TEMP: overlay dummy Decathlon ( K ) / Columbia "Woven" figures
-        // derived from Decathlon ( W )'s real numbers -- see
-        // injectDummyWovenBuyers() above. Remove once real data exists.
+        // TEMP: overlay dummy Decathlon ( K ) / Columbia "Woven" figures.
         const buyerStockWithDummy = injectDummyWovenBuyers(json.buyerStock ?? []);
 
         setData({
@@ -657,11 +610,6 @@ export default function DashboardPage() {
         });
         setError("");
       } catch (err) {
-        // Fetch failed -- keep whatever was already on screen rather than
-        // blanking the whole dashboard, but surface the problem quietly
-        // in the console for debugging. This applies to background
-        // refreshes too: a transient failure on a 5s poll shouldn't wipe
-        // out good data already on screen.
         console.error("dashboard buyer-overview fetch failed:", err.message);
       } finally {
         if (!cancelled && isFirstLoad) setPieLoading(false);
@@ -671,9 +619,7 @@ export default function DashboardPage() {
     // Initial load for this selectedDate.
     fetchDashboard(true);
 
-    // Silent auto-refresh every REFRESH_INTERVAL_MS -- keeps KPIs, both
-    // bar charts, and all pies current without a manual reload or any
-    // loading-state flicker.
+    // Silent auto-refresh every REFRESH_INTERVAL_MS.
     intervalId = setInterval(() => fetchDashboard(false), REFRESH_INTERVAL_MS);
 
     return () => {
@@ -710,9 +656,7 @@ export default function DashboardPage() {
   const reqTotal = requisitionBreakdown.reduce((s, r) => s + r.count, 0);
   const isToday = selectedDate === todayStr();
 
-  // NEW: ageing pie data for the currently selected metric (Yds or Roll).
-  // `ageingAll` keeps all five buckets for the legend; `ageingPie` drops
-  // empty buckets so recharts doesn't draw zero-width slices.
+  // Ageing pie data for the currently selected metric (Yds or Roll).
   const ageingAll = ageingSummary.map((a) => ({
     bucket: a.ageBucket,
     value: ageingMetric === "yds" ? a.totalAvailableYds : a.totalAvailableRoll,
@@ -720,6 +664,9 @@ export default function DashboardPage() {
   const ageingPie = ageingAll.filter((a) => a.value > 0);
   const ageingTotal = ageingAll.reduce((s, a) => s + a.value, 0);
   const ageingUnit = ageingMetric === "yds" ? " yds" : " roll";
+
+  // NEW: suppliers for the currently selected buyer.
+  const supplierList = SUPPLIER_RANKING_DATA.filter((s) => s.buyer === supplierBuyer);
 
   return (
     <div
@@ -741,10 +688,6 @@ export default function DashboardPage() {
         * { box-sizing: border-box; }
         html, body { overflow: hidden; }
 
-        /* KPI row: always 4 columns -- never wraps -- so the row's own
-           height (below) stays the only thing that needs to shrink on a
-           short/narrow screen. Cards themselves use clamp() internally
-           to shrink their padding/type to match. */
         .kpi-row {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -753,10 +696,6 @@ export default function DashboardPage() {
           flex-shrink: 0;
         }
 
-        /* Charts row: now 4 fixed-ratio columns (buyer bar, item-code
-           bar, supplier ranking, and the combined status/requisition/
-           ageing card), single row, filling whatever vertical space the
-           header + KPI row leave via flex:1. */
         .charts-grid {
           display: grid;
           grid-template-columns: 1.1fr 1.1fr 0.9fr 2.3fr;
@@ -784,9 +723,7 @@ export default function DashboardPage() {
         .date-picker:focus { border-color: ${T.amber}; }
       `}</style>
 
-      {/* Header -- kept to one line (no wrap) so its height never grows
-          and eats into the KPI/charts vertical budget; the date input and
-          "Live" label just shrink via clamp() instead. */}
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, gap: 10, minHeight: 0 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: displayFont, fontSize: "clamp(15px, 1.8vh, 20px)", fontWeight: 700, color: T.text, whiteSpace: "nowrap" }}>
@@ -819,7 +756,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI row -- fixed 4-column grid, height scales with viewport, see .kpi-row above. */}
+      {/* KPI row */}
       <div className="kpi-row">
         <KpiCard icon={Boxes} label="Available Roll" value={kpis.totalAvailableRoll} unit="Roll" accent={T.amber} />
         <KpiCard icon={Layers} label="Available Yds" value={kpis.totalAvailableYds} unit="Yds" accent={T.teal} />
@@ -827,16 +764,9 @@ export default function DashboardPage() {
         <KpiCard icon={PackageSearch} label="Total Receiving" value={kpis.totalReceivingCount} unit="invoices" accent={T.slate} />
       </div>
 
-      {/* Charts row -- buyer bar, item-code bar, supplier ranking list,
-          batch pie, requisition pie, stock ageing pie. Fixed 6-column
-          grid, single row, always fills the remaining viewport height --
-          see .charts-grid above. */}
+      {/* Charts row */}
       <div className="charts-grid">
-        {/* Buyer-wise Roll -- main VERTICAL bar chart (bars rise from the
-            bottom, buyer names along the X axis), horizontally scrollable
-            when there are many buyers. All-time totals, not date-filtered.
-            Buyer names are always shown IN FULL (no truncation/ellipsis) --
-            the horizontal scroll container is what handles overflow. */}
+        {/* Buyer-wise Roll */}
         <Panel
           eyebrow="By Buyer · All-time"
           title="Available Roll"
@@ -853,13 +783,13 @@ export default function DashboardPage() {
                   <BarChart data={buyerStock} margin={{ left: 4, right: 16, top: 4, bottom: 28 }} barCategoryGap="20%">
                     <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
                     <XAxis
-  dataKey="buyer"
-  height={36}
-  tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
-  axisLine={{ stroke: T.border }}
-  tickLine={false}
-  interval={0}
-/>
+                      dataKey="buyer"
+                      height={36}
+                      tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
+                      axisLine={{ stroke: T.border }}
+                      tickLine={false}
+                      interval={0}
+                    />
                     <YAxis type="number" tick={{ fill: T.muted, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={44} />
                     <Tooltip content={<CustomTooltip unit=" roll" />} cursor={{ fill: "rgba(184,122,74,0.06)" }} />
                     <Bar dataKey="roll" name="Roll" fill={T.amber} radius={[5, 5, 0, 0]} barSize={54} />
@@ -870,11 +800,7 @@ export default function DashboardPage() {
           )}
         </Panel>
 
-        {/* Item Code-wise Roll + Yds -- replaces the old "By Supplier"
-            panel. Grouped bars (Roll on the left axis, Yds on the right
-            axis since the two scales are very different), aggregated
-            server-side from the same location-allocation data the Buyer
-            panel reads. All-time totals, not date-filtered. */}
+        {/* Item Code-wise Roll + Yds */}
         <Panel
           eyebrow="By Item Code · All-time"
           title="Available Roll & Yds"
@@ -891,14 +817,14 @@ export default function DashboardPage() {
                   <BarChart data={itemCodeStock} margin={{ left: 4, right: 8, top: 4, bottom: 28 }} barCategoryGap="20%" barGap={4}>
                     <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
                     <XAxis
-  dataKey="itemCode"
-  height={36}
-  tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
-  axisLine={{ stroke: T.border }}
-  tickLine={false}
-  interval={0}
-  tickFormatter={(v) => (typeof v === "string" && v.length > 10 ? `${v.slice(0, 10)}…` : v)}
-/>
+                      dataKey="itemCode"
+                      height={36}
+                      tick={{ fill: T.text, fontSize: 11.5, fontFamily: bodyFont }}
+                      axisLine={{ stroke: T.border }}
+                      tickLine={false}
+                      interval={0}
+                      tickFormatter={(v) => (typeof v === "string" && v.length > 10 ? `${v.slice(0, 10)}…` : v)}
+                    />
                     <YAxis yAxisId="roll" type="number" tick={{ fill: T.amber, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={40} />
                     <YAxis yAxisId="yds" orientation="right" type="number" tick={{ fill: T.slate, fontSize: 11, fontFamily: monoFont }} axisLine={false} tickLine={false} width={48} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(61,106,138,0.06)" }} />
@@ -911,29 +837,29 @@ export default function DashboardPage() {
           )}
         </Panel>
 
-        {/* Supplier Ranking -- ranked list from the monthly Supplier
-            Performance Evaluation sheet. Sorted by Achieve % (nulls/
-            #DIV/0! rows sink to the bottom, shown as "N/A"). Not
-            date-filtered -- it reflects the latest evaluation month. */}
+        {/* Supplier Ranking -- Sep 2026 sheets, Decathlon / Columbia switch.
+            Sorted by Achieve % (nulls / #DIV/0! rows sink to the bottom,
+            shown as "N/A"). Not date-filtered. */}
         <Panel
-          eyebrow="Suppliers · Aug 2026"
+          eyebrow={`Suppliers · ${SUPPLIER_MONTH_LABEL}`}
           title="Supplier Ranking"
           right={
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: monoFont, fontSize: 11, color: T.muted }}>
-              <Trophy size={12} color={T.amber} /> {SUPPLIER_RANKING_DATA.length}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <MetricToggle
+                value={supplierBuyer}
+                onChange={setSupplierBuyer}
+                options={SUPPLIER_BUYERS.map((b) => ({ key: b, label: b }))}
+              />
+              <span style={{ display: "flex", alignItems: "center", gap: 4, fontFamily: monoFont, fontSize: 11, color: T.muted }}>
+                <Trophy size={12} color={T.amber} /> {supplierList.length}
+              </span>
+            </div>
           }
         >
-          <SupplierRanking suppliers={SUPPLIER_RANKING_DATA} />
+          <SupplierRanking suppliers={supplierList} />
         </Panel>
 
-        {/* Status Breakdown + Fulfillment Status + Stock Ageing --
-            combined into one card as three side-by-side mini pies
-            (divided by a thin border) instead of three separate panels.
-            Each keeps its own data source and behaviour exactly as
-            before: the first two are date-filtered to selectedDate, the
-            ageing pie is live/current-stock with its own Yds/Roll
-            toggle. */}
+        {/* Status Breakdown + Fulfillment Status + Stock Ageing */}
         <Panel eyebrow="Batches · Requisitions · Ageing" title="Breakdowns">
           <div
             style={{
@@ -944,8 +870,7 @@ export default function DashboardPage() {
               minWidth: 0,
             }}
           >
-            {/* Batch status pie -- date-filtered to the selected date
-                (via the parent Material Receive's date). */}
+            {/* Batch status pie */}
             <MiniPieCard eyebrow={`Stock Batches · ${selectedDate}`} title="Status Breakdown">
               {statusBreakdown.length === 0 ? (
                 <div style={{ color: T.muted, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center" }}>
@@ -991,8 +916,7 @@ export default function DashboardPage() {
               )}
             </MiniPieCard>
 
-            {/* Requisition status pie -- date-filtered to the selected
-                date (via the requisition's own date). */}
+            {/* Requisition status pie */}
             <div style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: "clamp(6px, 0.8vw, 14px)", minWidth: 0, height: "100%" }}>
               <MiniPieCard eyebrow={`Cutting Requisitions · ${selectedDate}`} title="Fulfillment Status">
                 {requisitionBreakdown.length === 0 ? (
@@ -1040,12 +964,7 @@ export default function DashboardPage() {
               </MiniPieCard>
             </div>
 
-            {/* Stock Ageing pie -- available stock split by how long it
-                has been sitting (days since the parent Receive's date):
-                0-30 / 31-60 / 61-90 / 91-180 / 180+. Yds/Roll toggle in
-                its own mini-header. Current-stock totals, NOT
-                date-filtered by the header date picker. Data =
-                `ageingSummary` from GET /material-stock. */}
+            {/* Stock Ageing pie */}
             <div style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: "clamp(6px, 0.8vw, 14px)", minWidth: 0, height: "100%" }}>
               <MiniPieCard
                 eyebrow="Available Stock · Live"

@@ -12,45 +12,33 @@ import {
   flexRender, getCoreRowModel, getPaginationRowModel,
   getSortedRowModel, useReactTable,
 } from "@tanstack/react-table";
+import { IBM_Plex_Sans } from "next/font/google";
+
+const plex = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// ─── Theme (matches Style Register) ───────────────────────────────────────────
-const BLUE = "#3B9ED4";
-const BLUE_DARK = "#2E8EC4";
-const BLUE_HDR = "#C8E3F5";  // table header bg
-const BLUE_ROW = "#EEF6FC";  // odd row bg
-const BLUE_FAINT = "#DBEEFF";  // hover
-const BORDER_CLR = "#D1E4F0";
-const PAGE_BG = "#F0F4F8";
-const TEXT_MAIN = "#1a1a1a";
-const TEXT_SUB = "#5a6a7a";
+// ─── Theme: Flat Teal & Zinc (Tailwind-only) ───────────────────────────────────
+const focus =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/40";
 
-// ─── Shared class helpers ──────────────────────────────────────────────────────
 const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 " +
-  "placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 " +
-  `focus:ring-[${BLUE}]/25 focus:border-[${BLUE}] transition-all duration-150`;
+  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 " +
+  "placeholder:text-zinc-400 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25";
 
-const btnPrimary =
-  "inline-flex items-center gap-2 rounded-lg text-white text-sm font-semibold px-4 py-2.5 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none";
+const btnPrimary = `inline-flex items-center gap-2 rounded-md bg-teal-800 px-4 py-2 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60 ${focus}`;
+const btnSecondary = `inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60 ${focus}`;
+const btnIcon = `inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 ${focus}`;
 
-const btnSecondary =
-  "inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white " +
-  "text-gray-600 text-sm font-medium px-3 py-2 hover:border-[#3B9ED4] " +
-  "hover:text-[#3B9ED4] transition-colors disabled:opacity-40 disabled:pointer-events-none";
-
-const btnIcon =
-  "inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white " +
-  "text-gray-500 w-8 h-8 hover:border-[#3B9ED4] hover:text-[#3B9ED4] " +
-  "transition-colors disabled:opacity-30 disabled:pointer-events-none";
+const th = "px-3 py-2.5 font-medium";
+const td = "px-3 py-2 align-top border-b border-zinc-200";
+const thead = "sticky top-0 z-10 border-b border-zinc-300 bg-zinc-50 text-zinc-500";
 
 // ─── Filter / column config ───────────────────────────────────────────────────
-// dateFrom / dateTo are handled with dedicated <input type="date"> controls
-// in FilterPanel (see below) rather than the generic FILTER_FIELDS text-input
-// loop, but they still live in the same `filters` state object so the
-// existing "build querystring from every non-empty filter" logic in
-// runSearch() picks them up automatically with no extra plumbing.
 const emptyFilters = {
   itemCodePdm: "", style: "", color: "", model: "", season: "",
   buyer: "", invoiceNo: "", item: "", warehouse: "", location: "",
@@ -72,17 +60,16 @@ const FILTER_FIELDS = [
   { key: "fabricDetails", label: "Fabric Details" },
 ];
 
-// Age-bucket display order + colors, shared by the Ageing summary card and
-// the optional "Age Bucket" table column. Must match the backend's
-// AGE_BUCKET_ORDER in materialStock.controllers.js.
+// Must match the backend's AGE_BUCKET_ORDER in materialStock.controllers.js.
 const AGE_BUCKET_COLORS = {
-  "0-30 days": "#22c55e",
-  "31-60 days": "#84cc16",
-  "61-90 days": "#f59e0b",
-  "91-180 days": "#f97316",
-  "180+ days": "#ef4444",
+  "0-30 days": "#115e59",
+  "31-60 days": "#0d9488",
+  "61-90 days": "#a1a1aa",
+  "91-180 days": "#b45309",
+  "180+ days": "#b91c1c",
 };
 
+// width = relative weight, used to derive each column's minimum pixel width
 const ALL_COLUMNS = [
   { key: "date", label: "Date", width: 6, defaultOn: true },
   { key: "invoiceNo", label: "Invoice No.", width: 7, defaultOn: false },
@@ -108,6 +95,7 @@ const ALL_COLUMNS = [
 
 const DEFAULT_KEYS = ALL_COLUMNS.filter((c) => c.defaultOn).map((c) => c.key);
 const LS_KEY = "materialStock:visibleColumns";
+const PX_PER_WIDTH_UNIT = 16; // min column width = width * 16px
 
 function loadSavedColumns() {
   if (typeof window === "undefined") return DEFAULT_KEYS;
@@ -124,10 +112,7 @@ const fmtNum = (v) => {
   return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
-const numFs = (t) => {
-  const l = String(t).length;
-  if (l <= 4) return "1em"; if (l <= 6) return "0.92em"; if (l <= 8) return "0.8em"; return "0.68em";
-};
+const pctColor = (v) => (v >= 70 ? "#0f766e" : v >= 35 ? "#71717a" : "#b91c1c");
 
 // ─── Mini donut ────────────────────────────────────────────────────────────────
 function MiniDonut({ percent }) {
@@ -135,31 +120,29 @@ function MiniDonut({ percent }) {
   const size = 26; const sw = 4.5;
   const r = (size - sw) / 2;
   const circ = 2 * Math.PI * r;
-  const color = v >= 70 ? "#22c55e" : v >= 35 ? "#f59e0b" : "#ef4444";
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={sw} stroke="#e2e8f0" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={sw} stroke="#e4e4e7" />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={sw}
         strokeDasharray={circ} strokeDashoffset={circ * (1 - v / 100)}
-        strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        stroke={color} style={{ transition: "stroke-dashoffset .35s ease" }}
+        strokeLinecap="butt" transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        stroke={pctColor(v)}
       />
     </svg>
   );
 }
 
-// ─── KPI tile ──────────────────────────────────────────────────────────────────
-function KpiTile({ icon: Icon, label, value, color }) {
+// ─── KPI strip ─────────────────────────────────────────────────────────────────
+function KpiStrip({ items }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: color + "18" }}>
-        <Icon size={20} style={{ color }} />
-      </div>
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">{label}</p>
-        <p className="text-xl font-bold text-gray-800 leading-none">{value}</p>
-      </div>
+    <div className="grid grid-cols-2 gap-px border border-zinc-300 bg-zinc-200 sm:grid-cols-2 lg:max-w-xl">
+      {items.map((k) => (
+        <div key={k.label} className="bg-white px-3 py-2">
+          <div className="text-xs text-zinc-500">{k.label}</div>
+          <div className="text-xl font-semibold tabular-nums text-teal-800">{k.value}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -177,31 +160,31 @@ function ColumnsMenu({ visibleKeys, setVisibleKeys }) {
   }, [open]);
 
   const toggle = (key) =>
-    setVisibleKeys((p) => p.includes(key) ? p.filter((k) => k !== key) : [...p, key]);
+    setVisibleKeys((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
   return (
     <div className="relative" ref={ref}>
       <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
-        <SlidersHorizontal size={15} />
+        <SlidersHorizontal className="h-4 w-4" />
         Columns
-        <span className="text-[10px] font-bold" style={{ color: BLUE }}>({visibleKeys.length})</span>
+        <span className="text-xs font-semibold tabular-nums text-teal-800">({visibleKeys.length})</span>
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-30 w-52 rounded-xl bg-white border border-gray-200 shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Show/Hide</span>
-            <div className="flex gap-2">
+        <div className="absolute right-0 top-full z-30 mt-1.5 w-56 overflow-hidden rounded-md border border-zinc-300 bg-white">
+          <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-3 py-2">
+            <span className="text-xs font-medium text-zinc-500">Show / hide columns</span>
+            <div className="flex gap-3">
               <button type="button" onClick={() => setVisibleKeys(ALL_COLUMNS.map((c) => c.key))}
-                className="text-[10px] font-semibold hover:underline" style={{ color: BLUE }}>All</button>
+                className="text-xs font-medium text-teal-800 hover:underline">All</button>
               <button type="button" onClick={() => setVisibleKeys(DEFAULT_KEYS)}
-                className="text-[10px] font-semibold hover:underline" style={{ color: BLUE }}>Default</button>
+                className="text-xs font-medium text-teal-800 hover:underline">Default</button>
             </div>
           </div>
-          <div className="max-h-64 overflow-y-auto py-1">
+          <div className="max-h-64 divide-y divide-zinc-200 overflow-y-auto">
             {ALL_COLUMNS.map((c) => (
-              <label key={c.key} className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-[#EEF6FC] cursor-pointer transition-colors">
+              <label key={c.key} className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50">
                 <input type="checkbox" checked={visibleKeys.includes(c.key)} onChange={() => toggle(c.key)}
-                  className="rounded" style={{ accentColor: BLUE }} />
+                  className="accent-teal-800" />
                 {c.label}
               </label>
             ))}
@@ -215,66 +198,64 @@ function ColumnsMenu({ visibleKeys, setVisibleKeys }) {
 // ─── Filter panel ──────────────────────────────────────────────────────────────
 function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
   const active = Object.values(filters).filter((v) => v?.trim()).length;
+  const filled = "border-teal-700 bg-teal-50/40";
 
   return (
-    <form onSubmit={onSearch} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50">
+    <form onSubmit={onSearch} className="rounded-md border border-zinc-300 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Filter size={14} style={{ color: BLUE }} />
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Search Filters</span>
+          <Filter className="h-4 w-4 text-teal-800" />
+          <h3 className="text-sm font-semibold text-zinc-900">Search filters</h3>
           {active > 0 && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: BLUE }}>
+            <span className="rounded-md bg-teal-800 px-2 py-0.5 text-xs font-medium tabular-nums text-white">
               {active} active
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ backgroundColor: BLUE }}
-            className={btnPrimary}
-          >
-            <Search size={14} />
+          <button type="button" onClick={onReset} disabled={loading || active === 0} className={btnSecondary}>
+            <RotateCcw className="h-4 w-4" />
+            Reset
+          </button>
+          <button type="submit" disabled={loading} className={btnPrimary}>
+            <Search className="h-4 w-4" />
             {loading ? "Searching…" : "Search"}
           </button>
         </div>
       </div>
 
-      {/* Date range — filters against the parent Receive's Date, inclusive
-          on both ends. Kept separate from the generic text-field grid below
-          since these need type="date" pickers rather than free text. */}
-      <div className="flex flex-wrap items-end gap-3 px-4 pt-4 pb-4 border-b border-gray-100 bg-gray-50/60">
+      {/* Date range (inclusive on both ends) */}
+      <div className="flex flex-wrap items-end gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3">
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Date From</label>
+          <label className="mb-1 block text-xs text-zinc-500">Date from</label>
           <input
             type="date"
             value={filters.dateFrom}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-            className={`${inputCls} !py-2 !text-xs w-40 ${filters.dateFrom ? "border-[#3B9ED4]/60 bg-[#EEF6FC]" : ""}`}
+            className={`${inputCls} w-40 ${filters.dateFrom ? filled : ""}`}
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Date To</label>
+          <label className="mb-1 block text-xs text-zinc-500">Date to</label>
           <input
             type="date"
             value={filters.dateTo}
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-            className={`${inputCls} !py-2 !text-xs w-40 ${filters.dateTo ? "border-[#3B9ED4]/60 bg-[#EEF6FC]" : ""}`}
+            className={`${inputCls} w-40 ${filters.dateTo ? filled : ""}`}
           />
         </div>
         {(filters.dateFrom || filters.dateTo) && (
           <button
             type="button"
             onClick={() => setFilters({ ...filters, dateFrom: "", dateTo: "" })}
-            className="text-[10px] font-semibold hover:underline text-gray-400 mb-2.5"
+            className="mb-2.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:underline"
           >
             Clear dates
           </button>
         )}
       </div>
 
-      <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {FILTER_FIELDS.map((f) => (
           <div key={f.key} className="relative">
             <input
@@ -283,11 +264,12 @@ function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
               onChange={(e) => setFilters({ ...filters, [f.key]: e.target.value })}
               placeholder={f.label}
               title={f.label}
-              className={`${inputCls} !py-2 !text-xs pr-7 ${filters[f.key] ? "border-[#3B9ED4]/60 bg-[#EEF6FC]" : ""}`}
+              className={`${inputCls} pr-7 ${filters[f.key] ? filled : ""}`}
             />
             {filters[f.key] && (
-              <button type="button" onClick={() => setFilters({ ...filters, [f.key]: "" })}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-base leading-none">
+              <button type="button" aria-label={`Clear ${f.label}`}
+                onClick={() => setFilters({ ...filters, [f.key]: "" })}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-base leading-none text-zinc-400 hover:text-zinc-700">
                 ×
               </button>
             )}
@@ -309,24 +291,20 @@ function SummaryTable({ summary }) {
     ? summary.filter((s) => s.itemCodePdm?.toLowerCase().includes(q) || s.color?.toLowerCase().includes(q))
     : summary;
 
-  const HEADERS = ["Item Code / PDM", "Color", "Avail. Roll", "Avail. Yds"];
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      {/* Header bar */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
+    <section className="rounded-md border border-zinc-300 bg-white">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <TrendingUp size={16} style={{ color: BLUE }} />
-          <span className="font-bold text-sm text-gray-800">Total Available</span>
-          <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style={{ background: BLUE }}>
+          <TrendingUp className="h-4 w-4 text-teal-800" />
+          <h3 className="text-sm font-semibold text-zinc-900">Total available</h3>
+          <span className="rounded-md bg-teal-800 px-2 py-0.5 text-xs font-medium tabular-nums text-white">
             {rows.length}{q ? ` / ${summary.length}` : ""}
           </span>
         </div>
         <div className="flex items-center gap-2">
           {open && (
             <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search item or color…"
-              className={`${inputCls} !py-1.5 w-44 !text-xs`} />
+              placeholder="Search item or color…" className={`${inputCls} w-48`} />
           )}
           <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
             {open ? "Hide" : "Show"}
@@ -336,32 +314,25 @@ function SummaryTable({ summary }) {
 
       {open && (
         rows.length === 0
-          ? <p className="text-sm text-gray-400 italic px-5 py-4">No matches found.</p>
+          ? <p className="border-t border-zinc-200 px-4 py-12 text-center text-sm text-zinc-500">No matches found.</p>
           : (
-            <div className="overflow-x-auto max-h-60 overflow-y-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr style={{ background: BLUE_HDR }}>
-                    {HEADERS.map((h, i) => (
-                      <th key={h}
-                        className={`px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-[#A8D3EC] ${i >= 2 ? "text-right" : "text-left"}`}>
-                        {h}
-                      </th>
-                    ))}
+            <div className="max-h-60 overflow-auto border-t border-zinc-200">
+              <table className="w-full text-left text-[13px]">
+                <thead className={thead}>
+                  <tr>
+                    <th className={th}>Item Code / PDM</th>
+                    <th className={th}>Color</th>
+                    <th className={`${th} text-right`}>Avail. Roll</th>
+                    <th className={`${th} text-right`}>Avail. Yds</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {rows.map((s, i) => (
-                    <tr key={`${s.itemCodePdm}-${s.color}`}
-                      className={`border-b border-gray-100 hover:bg-[${BLUE_FAINT}] transition-colors ${i % 2 === 0 ? "bg-white" : "bg-[#EEF6FC]"}`}>
-                      <td className="px-5 py-3 text-xs font-semibold" style={{ color: BLUE }}>{s.itemCodePdm}</td>
-                      <td className="px-5 py-3 text-xs text-gray-700">{s.color}</td>
-                      <td className="px-5 py-3 text-xs text-right font-bold text-green-600 font-mono">
-                        <span style={{ fontSize: numFs(s.totalAvailableRoll) }}>{fmtNum(s.totalAvailableRoll)}</span>
-                      </td>
-                      <td className="px-5 py-3 text-xs text-right font-bold text-green-600 font-mono">
-                        <span style={{ fontSize: numFs(s.totalAvailableYds) }}>{fmtNum(s.totalAvailableYds)}</span>
-                      </td>
+                <tbody className="divide-y divide-zinc-200 text-zinc-800 tabular-nums">
+                  {rows.map((s) => (
+                    <tr key={`${s.itemCodePdm}-${s.color}`} className="hover:bg-zinc-50">
+                      <td className="px-3 py-2 align-top font-medium text-teal-800 break-words">{s.itemCodePdm}</td>
+                      <td className="px-3 py-2 align-top break-words">{s.color}</td>
+                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(s.totalAvailableRoll)}</td>
+                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(s.totalAvailableYds)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -369,29 +340,23 @@ function SummaryTable({ summary }) {
             </div>
           )
       )}
-    </div>
+    </section>
   );
 }
 
 // ─── Inventory Ageing summary (Table 1b) ───────────────────────────────────────
-// Mirrors SummaryTable's shape/behavior (collapsible card + table) but for
-// the ageingSummary array from the backend: one row per age bucket
-// (0-30 / 31-60 / 61-90 / 91-180 / 180+ days), always all five buckets in
-// a fixed order, showing how many batches and how much available stock has
-// been sitting that long. Helps spot slow-moving / dead stock at a glance.
 function AgeingSummary({ ageing }) {
   const [open, setOpen] = useState(false);
   if (!ageing?.length) return null;
 
   const totalAvailableYds = ageing.reduce((s, a) => s + (Number(a.totalAvailableYds) || 0), 0);
 
-  const HEADERS = ["Age Bucket", "Avail. Roll", "Avail. Yds"];
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
+    <section className="rounded-md border border-zinc-300 bg-white">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <Clock size={16} style={{ color: BLUE }} />
-          <span className="font-bold text-sm text-gray-800">Inventory Ageing</span>
+          <Clock className="h-4 w-4 text-teal-800" />
+          <h3 className="text-sm font-semibold text-zinc-900">Inventory ageing</h3>
         </div>
         <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
           {open ? "Hide" : "Show"}
@@ -400,36 +365,28 @@ function AgeingSummary({ ageing }) {
 
       {open && (
         totalAvailableYds === 0
-          ? <p className="text-sm text-gray-400 italic px-5 py-4">No stock in the current results to age.</p>
+          ? <p className="border-t border-zinc-200 px-4 py-12 text-center text-sm text-zinc-500">No stock in the current results to age.</p>
           : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr style={{ background: BLUE_HDR }}>
-                    {HEADERS.map((h, i) => (
-                      <th key={h}
-                        className={`px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-[#A8D3EC] ${i >= 1 ? "text-right" : "text-left"}`}>
-                        {h}
-                      </th>
-                    ))}
+            <div className="overflow-auto border-t border-zinc-200">
+              <table className="w-full text-left text-[13px]">
+                <thead className={thead}>
+                  <tr>
+                    <th className={th}>Age Bucket</th>
+                    <th className={`${th} text-right`}>Avail. Roll</th>
+                    <th className={`${th} text-right`}>Avail. Yds</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {ageing.map((a, i) => (
-                    <tr key={a.ageBucket}
-                      className={`border-b border-gray-100 hover:bg-[${BLUE_FAINT}] transition-colors ${i % 2 === 0 ? "bg-white" : "bg-[#EEF6FC]"}`}>
-                      <td className="px-5 py-3 text-xs">
-                        <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold text-white"
-                          style={{ background: AGE_BUCKET_COLORS[a.ageBucket] || "#6b7280" }}>
+                <tbody className="divide-y divide-zinc-200 text-zinc-800 tabular-nums">
+                  {ageing.map((a) => (
+                    <tr key={a.ageBucket} className="hover:bg-zinc-50">
+                      <td className="px-3 py-2 align-top">
+                        <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium text-white"
+                          style={{ background: AGE_BUCKET_COLORS[a.ageBucket] || "#71717a" }}>
                           {a.ageBucket}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-xs text-right font-bold text-green-600 font-mono">
-                        <span style={{ fontSize: numFs(a.totalAvailableRoll) }}>{fmtNum(a.totalAvailableRoll)}</span>
-                      </td>
-                      <td className="px-5 py-3 text-xs text-right font-bold text-green-600 font-mono">
-                        <span style={{ fontSize: numFs(a.totalAvailableYds) }}>{fmtNum(a.totalAvailableYds)}</span>
-                      </td>
+                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(a.totalAvailableRoll)}</td>
+                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(a.totalAvailableYds)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -437,47 +394,37 @@ function AgeingSummary({ ageing }) {
             </div>
           )
       )}
-    </div>
+    </section>
   );
 }
-// ─── Cell primitives ───────────────────────────────────────────────────────────
-const CP = "px-4 py-3 text-xs border-b border-gray-100 overflow-hidden";
 
-function TCell({ children, align = "left", title, className = "" }) {
-  const a = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+// ─── Cell primitives (text wraps fully — no truncation) ────────────────────────
+const alignCls = (align) =>
+  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+
+function TCell({ children, align = "left", title, className = "", style }) {
   return (
-    <td className={`${CP} ${a} ${className}`} title={title}>
-      <div className="truncate">{children}</div>
+    <td className={`${td} ${alignCls(align)} whitespace-normal break-words ${className}`} title={title} style={style}>
+      {children}
     </td>
   );
 }
 
 function NumCell({ value }) {
-  const t = fmtNum(value);
-  return (
-    <td className={`${CP} text-right`}>
-      <div className="font-mono font-semibold text-gray-700 truncate" style={{ fontSize: numFs(t) }}>{t}</div>
-    </td>
-  );
+  return <td className={`${td} text-right font-medium text-zinc-800`}>{fmtNum(value)}</td>;
 }
 
 function AvailCell({ value }) {
-  const t = fmtNum(value);
-  return (
-    <td className={`${CP} text-right`}>
-      <div className="font-mono font-bold text-green-600 truncate" style={{ fontSize: numFs(t) }}>{t}</div>
-    </td>
-  );
+  return <td className={`${td} text-right font-semibold text-teal-800`}>{fmtNum(value)}</td>;
 }
 
 function PctCell({ percent, title }) {
   const v = Math.max(0, Math.min(100, Number.isFinite(percent) ? percent : 0));
-  const color = v >= 70 ? "#22c55e" : v >= 35 ? "#f59e0b" : "#ef4444";
   return (
-    <td className={`${CP} text-center`} title={title}>
+    <td className={`${td} text-center`} title={title}>
       <div className="flex items-center justify-center gap-1.5">
         <MiniDonut percent={v} />
-        <span className="font-bold text-xs" style={{ color }}>{v}%</span>
+        <span className="text-xs font-semibold" style={{ color: pctColor(v) }}>{v}%</span>
       </div>
     </td>
   );
@@ -489,19 +436,19 @@ function StyleModelCell({ styles }) {
   const vis = exp ? list : list.slice(0, 1);
   const hidden = list.length - vis.length;
   return (
-    <td className={`${CP} align-top`}>
+    <td className={`${td} whitespace-normal break-words`}>
       <div className="flex flex-col gap-0.5">
         {vis.map((s) => (
-          <span key={s.id ?? `${s.style}-${s.model}`} className="text-xs">
-            <span className="font-semibold" style={{ color: BLUE }}>{s.style}</span>
-            {s.model && <span className="text-gray-400"> | {s.model}</span>}
+          <span key={s.id ?? `${s.style}-${s.model}`}>
+            <span className="font-medium text-teal-800">{s.style}</span>
+            {s.model && <span className="text-zinc-500"> | {s.model}</span>}
           </span>
         ))}
       </div>
       {list.length > 1 && (
         <button type="button" onClick={() => setExp((e) => !e)}
-          className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-semibold hover:underline" style={{ color: BLUE }}>
-          {exp ? <><ChevronUp size={10} />Less</> : <><ChevronDown size={10} />+{hidden} more</>}
+          className="mt-0.5 inline-flex items-center gap-0.5 text-xs font-medium text-teal-800 hover:underline">
+          {exp ? <><ChevronUp className="h-3 w-3" />Less</> : <><ChevronDown className="h-3 w-3" />+{hidden} more</>}
         </button>
       )}
     </td>
@@ -535,28 +482,29 @@ function getSortValue(key, r) {
 }
 
 function renderCell(key, r) {
+  const dash = <span className="text-zinc-400">—</span>;
   const locChip = (v) => (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold text-white" style={{ background: "#0d9488" }}>{v}</span>
+    <span className="inline-flex rounded-md bg-teal-800 px-2 py-0.5 text-xs font-medium text-white break-all">{v}</span>
   );
   const whChip = (v) => (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: BLUE + "18", color: BLUE }}>{v}</span>
+    <span className="inline-flex rounded-md border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700 break-all">{v}</span>
   );
   const ageBucketChip = (v) => (
-    <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold text-white"
-      style={{ background: AGE_BUCKET_COLORS[v] || "#6b7280" }}>{v}</span>
+    <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium text-white"
+      style={{ background: AGE_BUCKET_COLORS[v] || "#71717a" }}>{v}</span>
   );
   switch (key) {
     case "date": return <TCell key="date" title={r.date?.slice(0, 10)}>{r.date?.slice(0, 10)}</TCell>;
     case "invoiceNo": return <TCell key="invoiceNo">{r.invoiceNo}</TCell>;
-    case "buyer": return <TCell key="buyer" className="font-medium text-gray-800">{r.buyer}</TCell>;
-    case "season": return <TCell key="season" align="center"><span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700">{r.season}</span></TCell>;
+    case "buyer": return <TCell key="buyer" className="font-medium text-zinc-900">{r.buyer}</TCell>;
+    case "season": return <TCell key="season" align="center"><span className="inline-flex rounded-md border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">{r.season}</span></TCell>;
     case "styleModel": return <StyleModelCell key="styleModel" styles={r.styles} />;
     case "warehouse": return <TCell key="warehouse" align="center">{whChip(r.warehouse)}</TCell>;
     case "item": return <TCell key="item">{r.item}</TCell>;
-    case "itemCodePdm": return <TCell key="itemCodePdm" className="font-semibold" style={{ color: BLUE }}>{r.itemCodePdm}</TCell>;
+    case "itemCodePdm": return <TCell key="itemCodePdm" className="font-medium text-teal-800">{r.itemCodePdm}</TCell>;
     case "color": return <TCell key="color">{r.color}</TCell>;
-    case "fabricDetails": return <TCell key="fabricDetails">{r.fabricDetails || <span className="text-gray-300 italic">—</span>}</TCell>;
-    case "supplier": return <TCell key="supplier">{r.supplier || <span className="text-gray-300 italic">—</span>}</TCell>;
+    case "fabricDetails": return <TCell key="fabricDetails">{r.fabricDetails || dash}</TCell>;
+    case "supplier": return <TCell key="supplier">{r.supplier || dash}</TCell>;
     case "location": return <TCell key="location" align="center">{locChip(r.location)}</TCell>;
     case "receivedRoll": return <NumCell key="receivedRoll" value={r.rollQty} />;
     case "receivedYds": return <NumCell key="receivedYds" value={r.yds} />;
@@ -571,7 +519,7 @@ function renderCell(key, r) {
       return <PctCell key="ydsChart" percent={p} title={`${p}% of received yards available`} />;
     }
     case "ageDays": return <NumCell key="ageDays" value={r.ageDays} />;
-    case "ageBucket": return <TCell key="ageBucket" align="center">{r.ageBucket ? ageBucketChip(r.ageBucket) : <span className="text-gray-300 italic">—</span>}</TCell>;
+    case "ageBucket": return <TCell key="ageBucket" align="center">{r.ageBucket ? ageBucketChip(r.ageBucket) : dash}</TCell>;
     default: return null;
   }
 }
@@ -587,28 +535,61 @@ function PaginationBar({ table, total }) {
   const to = Math.min((idx + 1) * size, total);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50 text-sm">
-      <div className="flex items-center gap-2 text-xs text-gray-500">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-300 bg-zinc-50 px-4 py-2.5 text-sm">
+      <div className="flex items-center gap-2 text-xs text-zinc-500">
         <span>Rows per page</span>
         <select value={size} onChange={(e) => table.setPageSize(Number(e.target.value))}
-          className="rounded-lg border border-gray-200 bg-white text-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#3B9ED4]/25">
+          className={`rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-700 ${focus}`}>
           {PS_OPTS.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
       </div>
 
-      <span className="text-xs text-gray-500 font-medium">
+      <span className="text-xs tabular-nums text-zinc-500">
         {total === 0 ? "0 rows" : `${from}–${to} of ${total.toLocaleString()}`}
       </span>
 
       <div className="flex items-center gap-1">
-        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} title="First"><ChevronsLeft size={13} /></button>
-        <button type="button" className={btnIcon} onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} title="Prev"><ChevronLeft size={13} /></button>
-        <span className="px-3 py-1 rounded-lg text-white text-xs font-bold whitespace-nowrap" style={{ background: BLUE }}>
-          {count === 0 ? 0 : idx + 1} / {count}
+        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} title="First"><ChevronsLeft className="h-4 w-4" /></button>
+        <button type="button" className={btnIcon} onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} title="Previous"><ChevronLeft className="h-4 w-4" /></button>
+        <span className="whitespace-nowrap rounded-md bg-teal-800 px-3 py-1.5 text-xs font-medium tabular-nums text-white">
+          {idx + 1} / {count}
         </span>
-        <button type="button" className={btnIcon} onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} title="Next"><ChevronRight size={13} /></button>
-        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(count - 1)} disabled={!table.getCanNextPage()} title="Last"><ChevronsRight size={13} /></button>
+        <button type="button" className={btnIcon} onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} title="Next"><ChevronRight className="h-4 w-4" /></button>
+        <button type="button" className={btnIcon} onClick={() => table.setPageIndex(count - 1)} disabled={!table.getCanNextPage()} title="Last"><ChevronsRight className="h-4 w-4" /></button>
       </div>
+    </div>
+  );
+}
+
+// ─── Horizontal slider (synced with the table's scroll position) ───────────────
+function ScrollSlider({ scrollRef, maxScroll, scrollLeft }) {
+  if (maxScroll <= 0) return null;
+
+  const step = 200;
+  const go = (delta) => {
+    scrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  };
+
+  return (
+    <div className="flex items-center gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-2">
+      <button type="button" className={btnIcon} onClick={() => go(-step)} disabled={scrollLeft <= 0} title="Scroll left">
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={Math.round(maxScroll)}
+        step={1}
+        value={Math.round(scrollLeft)}
+        onChange={(e) => {
+          if (scrollRef.current) scrollRef.current.scrollLeft = Number(e.target.value);
+        }}
+        aria-label="Slide table left or right"
+        className="h-1.5 flex-1 cursor-pointer accent-teal-800"
+      />
+      <button type="button" className={btnIcon} onClick={() => go(step)} disabled={scrollLeft >= maxScroll - 1} title="Scroll right">
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }
@@ -617,6 +598,10 @@ function PaginationBar({ table, total }) {
 function StockTable({ rows, loading, searched, visibleKeys }) {
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
+
+  const scrollRef = useRef(null);
+  const [maxScroll, setMaxScroll] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   const cols = useMemo(
     () => ALL_COLUMNS.filter((c) => visibleKeys.includes(c.key)).map((c) => ({
@@ -640,70 +625,95 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
   });
 
   useEffect(() => {
-    setPagination((p) => p.pageIndex === 0 ? p : { ...p, pageIndex: 0 });
+    setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 }));
   }, [rows]);
 
-  const tw = cols.reduce((s, c) => s + (c.meta.width || 0), 0) || 1;
+  // Each column gets a minimum width so text wraps instead of squeezing;
+  // the table is as wide as the sum of those minimums (or the container).
+  const tableMinWidth = cols.reduce((s, c) => s + (c.meta.width || 6) * PX_PER_WIDTH_UNIT, 0);
+
+  // Keep slider range in sync with the scroll container's real overflow.
+  const measure = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setMaxScroll(Math.max(0, el.scrollWidth - el.clientWidth));
+    setScrollLeft(el.scrollLeft);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => ro.disconnect();
+  }, [measure, loading, rows, cols.length, pagination.pageSize, pagination.pageIndex]);
+
+  const showTable = !loading && rows.length > 0 && cols.length > 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      {/* Table top bar */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
+    <section className="overflow-hidden rounded-md border border-zinc-300 bg-white">
+      <div className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: BLUE + "18" }}>
-            <Boxes size={16} style={{ color: BLUE }} />
-          </div>
+          <Boxes className="h-4 w-4 text-teal-800" />
           <div>
-            <div>
-              <p className="font-bold text-sm text-gray-800 leading-tight">Stock Records</p>
-              <p className="text-[10px] text-gray-400 leading-tight">{rows.length.toLocaleString()} records</p>
-            </div>
+            <h3 className="text-sm font-semibold text-zinc-900">Stock records</h3>
+            <p className="mt-0.5 text-xs tabular-nums text-zinc-500">{rows.length.toLocaleString()} records</p>
           </div>
         </div>
-        <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full font-medium">
+        <span className="rounded-md border border-zinc-300 bg-zinc-50 px-2.5 py-1 text-xs tabular-nums text-zinc-600">
           {visibleKeys.length} columns
         </span>
       </div>
 
+      {/* Slider above the table */}
+      {showTable && (
+        <ScrollSlider scrollRef={scrollRef} maxScroll={maxScroll} scrollLeft={scrollLeft} />
+      )}
+
       {/* Scroll area */}
-      <div className="overflow-auto max-h-[58vh]" style={{ scrollbarWidth: "thin" }}>
+      <div
+        ref={scrollRef}
+        onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+        className="max-h-[58vh] overflow-auto"
+      >
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400 text-sm">
-            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: BLUE + "40", borderTopColor: BLUE }} />
+          <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-sm text-zinc-500">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-200 border-t-teal-800 motion-reduce:animate-none" />
             Loading stock data…
           </div>
         ) : rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400 text-sm">
-            <Database size={32} className="opacity-30" />
+          <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-center text-sm text-zinc-500">
+            <Database className="h-6 w-6 text-zinc-400" />
             {searched ? "No stock batches match these filters." : "Use the filters above to search for stock."}
           </div>
         ) : cols.length === 0 ? (
-          <div className="py-16 text-center text-gray-400 text-sm">No columns selected — use the Columns picker.</div>
+          <div className="px-4 py-12 text-center text-sm text-zinc-500">No columns selected. Use the Columns menu to pick some.</div>
         ) : (
-          <table className="w-full border-collapse table-fixed" style={{ fontSize: "clamp(0.65rem, 0.48rem + 0.5vw, 0.82rem)" }}>
-            <colgroup>
-              {cols.map((c) => <col key={c.id} style={{ width: `${(c.meta.width / tw) * 100}%` }} />)}
-            </colgroup>
-            <thead className="sticky top-0 z-10">
-              <tr style={{ background: BLUE_HDR }}>
+          <table
+            className="w-full table-auto border-collapse text-left text-[13px] tabular-nums text-zinc-800"
+            style={{ minWidth: tableMinWidth }}
+          >
+            <thead className={thead}>
+              <tr>
                 {table.getHeaderGroups()[0]?.headers.map((h) => {
-                  const align = h.column.columnDef.meta?.align;
+                  const meta = h.column.columnDef.meta || {};
                   const sorted = h.column.getIsSorted();
                   return (
                     <th
                       key={h.id}
                       onClick={h.column.getToggleSortingHandler()}
-                      className={`px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-700 border-b select-none cursor-pointer transition-colors overflow-hidden ${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"}`}
-                      style={{ borderBottomColor: "#A8D3EC" }}
+                      style={{ minWidth: (meta.width || 6) * PX_PER_WIDTH_UNIT }}
+                      className={`${th} cursor-pointer select-none whitespace-normal break-words hover:text-zinc-900 ${alignCls(meta.align)}`}
                     >
-                      <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : align === "center" ? "justify-center" : ""}`}>
-                        <span className="truncate">{flexRender(h.column.columnDef.header, h.getContext())}</span>
+                      <div className={`flex items-center gap-1 ${meta.align === "right" ? "justify-end" : meta.align === "center" ? "justify-center" : ""}`}>
+                        <span>{flexRender(h.column.columnDef.header, h.getContext())}</span>
                         {sorted === "asc"
-                          ? <ChevronUp size={11} style={{ color: BLUE }} className="shrink-0" />
+                          ? <ChevronUp className="h-3 w-3 shrink-0 text-teal-800" />
                           : sorted === "desc"
-                            ? <ChevronDown size={11} style={{ color: BLUE }} className="shrink-0" />
-                            : <ArrowUpDown size={10} className="shrink-0 text-gray-400" />
-                        }
+                            ? <ChevronDown className="h-3 w-3 shrink-0 text-teal-800" />
+                            : <ArrowUpDown className="h-3 w-3 shrink-0 text-zinc-400" />}
                       </div>
                     </th>
                   );
@@ -712,18 +722,12 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row, i) => (
-                <tr
-                  key={row.id}
-                  className="transition-colors duration-75"
-                  style={{ background: i % 2 === 0 ? "#ffffff" : BLUE_ROW }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = BLUE_FAINT}
-                  onMouseLeave={(e) => e.currentTarget.style.background = i % 2 === 0 ? "#ffffff" : BLUE_ROW}
-                >
+                <tr key={row.id} className={`hover:bg-zinc-100 ${i % 2 === 0 ? "bg-white" : "bg-zinc-50"}`}>
                   {row.getVisibleCells().map((cell) => (
-  <React.Fragment key={cell.id}>
-    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-  </React.Fragment>
-))}
+                    <React.Fragment key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </React.Fragment>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -731,10 +735,8 @@ function StockTable({ rows, loading, searched, visibleKeys }) {
         )}
       </div>
 
-      {!loading && rows.length > 0 && cols.length > 0 && (
-        <PaginationBar table={table} total={rows.length} />
-      )}
-    </div>
+      {showTable && <PaginationBar table={table} total={rows.length} />}
+    </section>
   );
 }
 
@@ -781,37 +783,30 @@ export default function MaterialStockPage() {
   const totalYds = rows.reduce((s, r) => s + (Number(r.availableYds) || 0), 0);
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: PAGE_BG, fontFamily: "Inter, system-ui, sans-serif" }}>
+    <div className={`min-h-screen bg-zinc-100 text-zinc-900 ${plex.className}`}>
+      <main className="mx-auto max-w-[1440px] space-y-4 p-4 pt-16 md:p-5 md:pt-5">
 
-      {/* ── Top bar (matches Style Register) ── */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm" style={{ background: BLUE }}>
-            <Database size={18} className="text-white" />
-          </div>
+        {/* ── Title + columns ── */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-base font-bold text-gray-800 leading-tight">Material Stock</h1>
-            <p className="text-[10px] text-gray-400">Warehouse inventory management</p>
+            <h2 className="text-2xl font-semibold text-zinc-900">Material Stock</h2>
+            <p className="mt-0.5 text-sm tabular-nums text-zinc-500">Warehouse inventory management</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
           <ColumnsMenu visibleKeys={visibleKeys} setVisibleKeys={setVisibleKeys} />
         </div>
-      </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 py-5 space-y-4">
-
-        {/* ── KPI tiles ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* <KpiTile icon={Boxes}      label="Total Batches"    value={rows.length.toLocaleString()}       color={BLUE} /> */}
-          <KpiTile icon={TrendingUp} label="Available Rolls" value={fmtNum(totalRoll)} color="#22c55e" />
-          <KpiTile icon={Database} label="Available Yards" value={fmtNum(Math.round(totalYds))} color="#0d9488" />
-        </div>
+        {/* ── KPI strip ── */}
+        <KpiStrip
+          items={[
+            { label: "Available rolls", value: fmtNum(totalRoll) },
+            { label: "Available yards", value: fmtNum(Math.round(totalYds)) },
+          ]}
+        />
 
         {/* ── Error ── */}
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3">
-            <span className="font-bold">Error:</span> {error}
+          <div className="rounded-md border border-l-4 border-zinc-300 border-l-red-700 bg-white px-4 py-2.5 text-sm text-red-700">
+            <span className="font-semibold">Error:</span> {error}
           </div>
         )}
 
@@ -833,17 +828,10 @@ export default function MaterialStockPage() {
           searched={searched} visibleKeys={visibleKeys}
         />
 
-        <p className="text-right text-xs text-gray-400">
+        <p className="text-right text-xs tabular-nums text-zinc-500">
           Showing {rows.length.toLocaleString()} stock records
         </p>
-      </div>
-
-      <style>{`
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #c8d9e8; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #9ab8cc; }
-      `}</style>
+      </main>
     </div>
   );
 }

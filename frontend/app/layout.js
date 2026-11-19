@@ -1,14 +1,15 @@
-import { Roboto_Condensed } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import DarkModeProvider from "./provider/DarkModeProvider";
 import { AuthProvider } from "@/app/provider/AuthProvider";
 import { SidebarProvider } from "./provider/SidebarContext";
 import AppChrome from "./provider/AppChrome";
 
-const robotoCondensed = Roboto_Condensed({
-  variable: "--font-roboto-condensed",
+const plex = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata = {
@@ -21,7 +22,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${robotoCondensed.variable} h-full antialiased`}
+      className={`${plex.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans">

@@ -20,20 +20,20 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const PAGE_SIZE = 50;
 
 /* ============================================================
-   Style tokens -- same warm HKD theme as the Material Receive page,
+   Style tokens -- Flat Teal & Zinc, same surface language as Material Receive,
    since this import feeds directly into that same table.
    ============================================================ */
 
-const card = "bg-[#f7f5f0] dark:bg-[#221d16] border border-[#2c2417]/10 dark:border-[#e8ddd0]/10 rounded-xl shadow-sm";
+const card = "bg-white border border-zinc-300 rounded-md";
 const btnPrimary =
-  "inline-flex items-center gap-1.5 rounded-full bg-[#2c2417] dark:bg-[#e8ddd0] text-[#f0ede6] dark:text-[#1b1712] text-sm font-medium px-5 py-2.5 hover:bg-[#b87a4a] dark:hover:bg-[#d4955e] transition-colors disabled:opacity-50";
+  "inline-flex items-center gap-1.5 rounded-md bg-teal-800  text-white  text-sm font-medium px-5 py-2.5 hover:bg-teal-900  transition-colors disabled:opacity-50";
 const btnSecondary =
-  "inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#2c2417]/25 dark:border-[#e8ddd0]/25 bg-white dark:bg-[#2a241b] text-[#7a6250] dark:text-[#a8917d] text-sm font-medium px-4 py-2 hover:border-[#b87a4a] hover:text-[#b87a4a] dark:hover:border-[#d4955e] dark:hover:text-[#d4955e] transition-colors disabled:opacity-40 disabled:pointer-events-none";
+  "inline-flex items-center gap-1.5 rounded-md border border-zinc-200  bg-white  text-zinc-500  text-sm font-medium px-4 py-2 hover:border-teal-700 hover:text-teal-800   transition-colors disabled:opacity-40 disabled:pointer-events-none";
 const btnGhost =
-  "inline-flex items-center gap-1 rounded-full text-xs font-medium px-2.5 py-1 text-[#7a6250] dark:text-[#a8917d] hover:bg-[#2c2417]/8 dark:hover:bg-[#e8ddd0]/8 transition-colors disabled:opacity-30 disabled:pointer-events-none";
-const chip = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#b87a4a]/12 text-[#8a4a24] dark:bg-[#d4955e]/15 dark:text-[#d4955e]";
+  "inline-flex items-center gap-1 rounded-md text-xs font-medium px-2.5 py-1 text-zinc-500  hover:bg-zinc-100  transition-colors disabled:opacity-30 disabled:pointer-events-none";
+const chip = "inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-teal-800/10 text-teal-900  ";
 const cellInput =
-  "w-full min-w-[80px] bg-transparent border-0 border-b border-transparent hover:border-[#2c2417]/20 focus:border-[#b87a4a] focus:outline-none text-[11px] px-1 py-0.5 text-[#1a1208] dark:text-[#f0e8dc] dark:hover:border-[#e8ddd0]/20";
+  "w-full min-w-[80px] bg-transparent border-0 border-b border-transparent hover:border-zinc-200 focus:border-teal-700 focus:outline-none text-[11px] px-1 py-0.5 text-zinc-900  ";
 
 // Exact excel header set this page is built for (order matches the
 // user's confirmed template).
@@ -76,17 +76,17 @@ function StepDot({ active, done, label, index }) {
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition-colors ${
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold transition-colors ${
           done
-            ? "bg-[#5ca068] text-white"
+            ? "bg-teal-800 text-white"
             : active
-            ? "bg-[#2c2417] dark:bg-[#e8ddd0] text-[#f0ede6] dark:text-[#1b1712]"
-            : "bg-[#2c2417]/10 dark:bg-[#e8ddd0]/10 text-[#a08060]"
+            ? "bg-teal-800  text-white "
+            : "bg-zinc-100  text-zinc-500"
         }`}
       >
         {done ? <CheckCircle2 size={14} /> : index}
       </div>
-      <span className={`text-sm font-medium ${active || done ? "text-[#1a1208] dark:text-[#f0e8dc]" : "text-[#a08060]"}`}>
+      <span className={`text-sm font-medium ${active || done ? "text-zinc-900 " : "text-zinc-500"}`}>
         {label}
       </span>
     </div>
@@ -114,13 +114,13 @@ function DropZone({ file, onFile, onClear, disabled }) {
   if (file) {
     return (
       <div className={`${card} flex items-center gap-3 px-4 py-3`}>
-        <FileSpreadsheet size={22} className="text-[#b87a4a] shrink-0" />
+        <FileSpreadsheet size={22} className="text-teal-800 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-[#1a1208] dark:text-[#f0e8dc] truncate">{file.name}</div>
-          <div className="text-[11px] text-[#a08060]">{(file.size / 1024).toFixed(0)} KB</div>
+          <div className="text-sm font-medium text-zinc-900  truncate">{file.name}</div>
+          <div className="text-[11px] text-zinc-500">{(file.size / 1024).toFixed(0)} KB</div>
         </div>
         {!disabled && (
-          <button type="button" onClick={onClear} className="text-[#a08060] hover:text-[#b87a4a] transition-colors shrink-0" title="Remove file">
+          <button type="button" onClick={onClear} className="text-zinc-500 hover:text-teal-800 transition-colors shrink-0" title="Remove file">
             <X size={16} />
           </button>
         )}
@@ -133,17 +133,17 @@ function DropZone({ file, onFile, onClear, disabled }) {
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
-      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors ${
+      className={`flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors ${
         dragging
-          ? "border-[#b87a4a] bg-[#b87a4a]/5"
-          : "border-[#2c2417]/20 dark:border-[#e8ddd0]/20 hover:border-[#b87a4a]/50"
+          ? "border-teal-700 bg-teal-800/5"
+          : "border-zinc-200  hover:border-teal-700/50"
       }`}
     >
-      <UploadCloud size={28} className="text-[#b87a4a]" />
-      <div className="text-sm font-medium text-[#1a1208] dark:text-[#f0e8dc]">
+      <UploadCloud size={28} className="text-teal-800" />
+      <div className="text-sm font-medium text-zinc-900 ">
         Click to choose, or drag &amp; drop your Excel file
       </div>
-      <div className="text-xs text-[#a08060]">.xlsx, .xlsm or .xls — the "Material Stock" template</div>
+      <div className="text-xs text-zinc-500">.xlsx, .xlsm or .xls — the "Material Stock" template</div>
       <input
         ref={inputRef}
         type="file"
@@ -166,15 +166,15 @@ function DropZone({ file, onFile, onClear, disabled }) {
 function EditableTable({ pageRecords, onEdit }) {
   if (!pageRecords.length) {
     return (
-      <div className="py-10 text-center text-sm text-[#a08060]">
+      <div className="py-10 text-center text-sm text-zinc-500">
         No rows to show for this filter.
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-[#2c2417]/10 dark:border-[#e8ddd0]/10">
+    <div className="overflow-x-auto rounded-md border border-zinc-200 ">
       <table className="min-w-full text-[11px]">
-        <thead className="bg-[#e6e0d4]/70 dark:bg-[#221d16] text-[#7a6250] dark:text-[#a8917d]">
+        <thead className="bg-zinc-50/70  text-zinc-500 ">
           <tr>
             <th className="px-2 py-2 text-left font-semibold whitespace-nowrap">Row</th>
             {EDITABLE_FIELDS.map((f) => (
@@ -190,15 +190,15 @@ function EditableTable({ pageRecords, onEdit }) {
             return (
               <tr
                 key={r._key}
-                className={`border-t border-[#2c2417]/8 dark:border-[#e8ddd0]/8 ${
-                  hadDefaults ? "bg-[#b8933a]/6 dark:bg-[#e0c068]/8" : ""
+                className={`border-t border-zinc-200  ${
+                  hadDefaults ? "bg-zinc-100 " : ""
                 }`}
               >
-                <td className="px-2 py-1 whitespace-nowrap text-[#a08060]">
+                <td className="px-2 py-1 whitespace-nowrap text-zinc-500">
                   {r.sheet ? `${r.sheet} · ${r.row}` : r.row}
                   {hadDefaults && (
                     <span title={`Defaulted: ${r.defaultsApplied.join(", ")}`}>
-                      <Info size={11} className="inline-block ml-1 -mt-0.5 text-[#8a6a1a] dark:text-[#e0c068]" />
+                      <Info size={11} className="inline-block ml-1 -mt-0.5 text-zinc-500 " />
                     </span>
                   )}
                 </td>
@@ -327,15 +327,15 @@ export default function MaterialImportPage() {
   const step = finished ? 3 : meta ? 2 : 1;
 
   return (
-    <div className="min-h-screen bg-[#f0ede6] dark:bg-[#1b1712]">
+    <div className="min-h-screen bg-zinc-100 ">
       <div className="max-w-[1100px] mx-auto px-4 py-6 space-y-5">
         <div className="flex items-center gap-2">
-          <UploadCloud size={22} className="text-[#b87a4a]" />
+          <UploadCloud size={22} className="text-teal-800" />
           <div>
-            <h1 className="font-serif text-2xl text-[#1a1208] dark:text-[#f0e8dc]">
-              Material Stock <em className="italic text-[#b87a4a] dark:text-[#d4955e]">Import</em>
+            <h1 className=" text-2xl text-zinc-900 ">
+              Material Stock <em className="italic text-teal-800 ">Import</em>
             </h1>
-            <p className="text-xs text-[#7a6250] dark:text-[#a8917d]">
+            <p className="text-xs text-zinc-500 ">
               Upload the legacy Material Stock Excel template — every row is imported straight into stock exactly as the sheet has it: blank numbers become 0, nothing is validated or blocked.
             </p>
           </div>
@@ -344,15 +344,15 @@ export default function MaterialImportPage() {
         {/* Steps */}
         <div className="flex items-center gap-4 flex-wrap">
           <StepDot index={1} active={step === 1} done={step > 1} label="Upload file" />
-          <ArrowRight size={14} className="text-[#a08060]" />
+          <ArrowRight size={14} className="text-zinc-500" />
           <StepDot index={2} active={step === 2} done={step > 2} label="Review (optional)" />
-          <ArrowRight size={14} className="text-[#a08060]" />
+          <ArrowRight size={14} className="text-zinc-500" />
           <StepDot index={3} active={step === 3} done={false} label="Imported" />
           
         </div>
 <DataResetCard />
         {error && (
-          <div className="rounded-lg bg-[#a04a3a]/10 border border-[#a04a3a]/25 text-[#7a3325] dark:text-[#e08a78] text-xs px-3 py-2">
+          <div className="rounded-md bg-red-700/10 border border-zinc-200 text-red-700  text-xs px-3 py-2">
             <b>Error:</b> {error}
           </div>
         )}
@@ -360,8 +360,8 @@ export default function MaterialImportPage() {
         {/* Expected columns hint */}
         {!meta && (
           <div className={`${card} p-4 space-y-2`}>
-            <h2 className="font-serif text-sm text-[#1a1208] dark:text-[#f0e8dc]">Expected columns</h2>
-            <p className="text-xs text-[#7a6250] dark:text-[#a8917d]">
+            <h2 className="text-sm font-semibold text-zinc-900">Expected columns</h2>
+            <p className="text-xs text-zinc-500 ">
               This is the exact header row expected (order doesn't matter). Every row imports regardless of what's missing — blank text gets a placeholder only where the database requires one, blank numbers always become 0.
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -389,7 +389,7 @@ export default function MaterialImportPage() {
         {meta && !finished && (
           <div className={`${card} p-4 space-y-4`}>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="font-serif text-sm text-[#1a1208] dark:text-[#f0e8dc]">Review (optional)</h2>
+              <h2 className="text-sm font-semibold text-zinc-900">Review (optional)</h2>
               <div className="flex flex-wrap gap-1.5">
                 <span className={chip}>{meta.totalRows} rows found</span>
                 {meta.withoutRack > 0 && <span className={chip}>{meta.withoutRack} defaulted to Rack "UNASSIGNED"</span>}
@@ -398,7 +398,7 @@ export default function MaterialImportPage() {
               </div>
             </div>
 
-            <div className="rounded-lg bg-[#5ca068]/10 border border-[#5ca068]/25 text-[#3d7a4a] dark:text-[#8fca9c] text-xs px-3 py-2 flex items-center gap-1.5">
+            <div className="rounded-md bg-teal-800/10 border border-zinc-200 text-teal-800  text-xs px-3 py-2 flex items-center gap-1.5">
               <CheckCircle2 size={13} />
               Every row here will be imported exactly as-is — blank numbers are 0, nothing is required or validated. Edit anything below only if you want to.
             </div>
@@ -407,13 +407,13 @@ export default function MaterialImportPage() {
               <button
                 type="button"
                 onClick={() => { setOnlyDefaulted((v) => !v); setPage(0); }}
-                className={`${btnGhost} ${onlyDefaulted ? "bg-[#2c2417]/8 dark:bg-[#e8ddd0]/8" : ""}`}
+                className={`${btnGhost} ${onlyDefaulted ? "bg-zinc-100 " : ""}`}
                 disabled={defaultedCount === 0}
               >
                 <Info size={12} /> {onlyDefaulted ? "Showing defaulted rows" : "Show only rows with a fallback applied"}
               </button>
 
-              <div className="flex items-center gap-1 text-xs text-[#7a6250] dark:text-[#a8917d]">
+              <div className="flex items-center gap-1 text-xs text-zinc-500 ">
                 <button type="button" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className={btnGhost}>
                   <ChevronLeft size={14} />
                 </button>
@@ -426,7 +426,7 @@ export default function MaterialImportPage() {
 
             <EditableTable pageRecords={pageRecords} onEdit={editField} />
 
-            <div className="flex gap-2 pt-1 border-t border-[#2c2417]/10 dark:border-[#e8ddd0]/10">
+            <div className="flex gap-2 pt-1 border-t border-zinc-200 ">
               <button
                 type="button"
                 onClick={runCommit}
@@ -446,14 +446,14 @@ export default function MaterialImportPage() {
         {/* Result */}
         {finished && (
           <div className={`${card} p-5 space-y-3`}>
-            <div className="flex items-center gap-2 text-[#3d7a4a] dark:text-[#8fca9c]">
+            <div className="flex items-center gap-2 text-teal-800 ">
               <CheckCircle2 size={20} />
-              <h2 className="font-serif text-base">Import complete</h2>
+              <h2 className=" text-base">Import complete</h2>
             </div>
-            <p className="text-sm text-[#2c2417] dark:text-[#e8ddd0]">
+            <p className="text-sm text-zinc-900 ">
               <b>{totalCreated}</b> Material Receive record(s) created out of {meta.totalRows} rows in the file, all already in stock.
             </p>
-            <div className="flex gap-2 pt-1 border-t border-[#2c2417]/10 dark:border-[#e8ddd0]/10">
+            <div className="flex gap-2 pt-1 border-t border-zinc-200 ">
               <a href="/material-warehouse/material-stock" className={btnPrimary}>
                 View Material Stock <ArrowRight size={14} />
               </a>

@@ -128,13 +128,13 @@ export default function RegisterPage() {
 
   const fe = fieldErrors;
   const fieldWrapClass = (name) =>
-    `flex items-center gap-2 rounded-xl border bg-gray-50/70 px-3 transition-all focus-within:bg-white focus-within:shadow-sm ${
+    `flex items-center gap-2 rounded-md border bg-white px-3 transition-all focus-within:bg-white ${
       fe[name]
-        ? "border-red-300 focus-within:ring-2 focus-within:ring-red-200 focus-within:border-red-400"
-        : "border-gray-200 focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-400"
+        ? "border-red-300 focus-within:ring-2 focus-within:ring-red-700 focus-within:border-red-300"
+        : "border-zinc-300 focus-within:ring-2 focus-within:ring-teal-700 focus-within:border-teal-700"
     }`;
   const inputBareClass =
-    "w-full bg-transparent py-1.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none";
+    "w-full bg-transparent py-1.5 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none";
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -196,11 +196,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-100 px-4 py-4">
-      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-4xl border border-gray-100 flex flex-col md:flex-row overflow-hidden">
+    <section className="min-h-screen flex items-center justify-center bg-zinc-100 px-4 py-4">
+      <div className="bg-white  rounded-md w-full max-w-4xl border border-zinc-300 flex flex-col md:flex-row overflow-hidden">
 
         {/* LEFT: Illustration */}
-        <div className="hidden md:flex w-1/2 items-center justify-center bg-indigo-50 p-6">
+        <div className="hidden md:flex w-1/2 items-center justify-center bg-zinc-50 p-6">
           <Image
             src="/Sign up-rafiki.svg"
             alt="Sign up illustration"
@@ -223,17 +223,17 @@ export default function RegisterPage() {
               priority
             />
             <div className="min-w-0">
-              <h1 className="text-lg font-extrabold text-gray-800 leading-tight">
+              <h1 className="text-lg font-semibold text-zinc-800 leading-tight">
                 Create Your Account
               </h1>
-              <p className="text-xs text-gray-500 mt-0.5 truncate">
+              <p className="text-xs text-zinc-500 mt-0.5 truncate">
                 Join HKD Outdoor Innovations Ltd.
               </p>
             </div>
           </div>
 
           {error && (
-            <div className="mx-8 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-700">
+            <div className="mx-8 mb-2 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs text-red-700">
               {error}
             </div>
           )}
@@ -242,11 +242,11 @@ export default function RegisterPage() {
             {/* User Name + Email */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="user_name" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="user_name" className="block text-xs font-medium text-zinc-700 mb-1">
                   User Name
                 </label>
                 <div className={fieldWrapClass("user_name")}>
-                  <IconUser className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconUser className="w-4 h-4 text-zinc-400 shrink-0" />
                   <input
                     type="text"
                     id="user_name"
@@ -259,15 +259,15 @@ export default function RegisterPage() {
                   />
                 </div>
                 {fe.user_name && (
-                  <p className="mt-1 text-[11px] text-red-600">User Name আগে থেকেই আছে।</p>
+                  <p className="mt-1 text-[11px] text-red-700">User Name আগে থেকেই আছে।</p>
                 )}
               </div>
               <div>
-                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-xs font-medium text-zinc-700 mb-1">
                   Email
                 </label>
                 <div className={fieldWrapClass("email")}>
-                  <IconMail className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconMail className="w-4 h-4 text-zinc-400 shrink-0" />
                   <input
                     type="email"
                     id="email"
@@ -279,7 +279,7 @@ export default function RegisterPage() {
                   />
                 </div>
                 {fe.email && (
-                  <p className="mt-1 text-[11px] text-red-600">Email আগে থেকেই ব্যবহৃত।</p>
+                  <p className="mt-1 text-[11px] text-red-700">Email আগে থেকেই ব্যবহৃত।</p>
                 )}
               </div>
             </div>
@@ -287,11 +287,11 @@ export default function RegisterPage() {
             {/* Password + Confirm Password */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="block text-xs font-medium text-zinc-700 mb-1">
                   Password
                 </label>
                 <div className={fieldWrapClass("password")}>
-                  <IconLock className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconLock className="w-4 h-4 text-zinc-400 shrink-0" />
                   <input
                     type="password"
                     id="password"
@@ -305,11 +305,11 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div>
-                <label htmlFor="confirm_password" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="confirm_password" className="block text-xs font-medium text-zinc-700 mb-1">
                   Confirm Password
                 </label>
                 <div className={fieldWrapClass("confirm_password")}>
-                  <IconLockCheck className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconLockCheck className="w-4 h-4 text-zinc-400 shrink-0" />
                   <input
                     type="password"
                     id="confirm_password"
@@ -322,7 +322,7 @@ export default function RegisterPage() {
                   />
                 </div>
                 {fe.confirm_password && (
-                  <p className="mt-1 text-[11px] text-red-600">Password মিলছে না।</p>
+                  <p className="mt-1 text-[11px] text-red-700">Password মিলছে না।</p>
                 )}
               </div>
             </div>
@@ -330,11 +330,11 @@ export default function RegisterPage() {
             {/* Role + Department */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="role" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="role" className="block text-xs font-medium text-zinc-700 mb-1">
                   Role
                 </label>
                 <div className={fieldWrapClass("role")}>
-                  <IconBadge className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconBadge className="w-4 h-4 text-zinc-400 shrink-0" />
                   <select
                     id="role"
                     name="role"
@@ -351,11 +351,11 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div>
-                <label htmlFor="department" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="department" className="block text-xs font-medium text-zinc-700 mb-1">
                   Department
                 </label>
                 <div className={fieldWrapClass("department")}>
-                  <IconLayers className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconLayers className="w-4 h-4 text-zinc-400 shrink-0" />
                   <select
                     id="department"
                     name="department"
@@ -375,11 +375,11 @@ export default function RegisterPage() {
             {/* Assigned Building + Factory */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="assigned_building" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="assigned_building" className="block text-xs font-medium text-zinc-700 mb-1">
                   Assigned Floor
                 </label>
                 <div className={fieldWrapClass("assigned_building")}>
-                  <IconLayers className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconLayers className="w-4 h-4 text-zinc-400 shrink-0" />
                   <select
                     id="assigned_building"
                     name="assigned_building"
@@ -401,11 +401,11 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div>
-                <label htmlFor="factory" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="factory" className="block text-xs font-medium text-zinc-700 mb-1">
                   Factory
                 </label>
                 <div className={fieldWrapClass("factory")}>
-                  <IconFactory className="w-4 h-4 text-gray-400 shrink-0" />
+                  <IconFactory className="w-4 h-4 text-zinc-400 shrink-0" />
                   <select
                     id="factory"
                     name="factory"
@@ -425,20 +425,20 @@ export default function RegisterPage() {
 
             {/* Profile Picture */}
             <div>
-              <label htmlFor="profile_picture" className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="profile_picture" className="block text-xs font-medium text-zinc-700 mb-1">
                 Profile Picture (Optional)
               </label>
               <div className="flex items-center gap-3">
                 <label
                   htmlFor="profile_picture"
-                  className={`flex-1 flex items-center gap-2 rounded-xl border border-dashed px-3 py-1.5 cursor-pointer transition-all ${
+                  className={`flex-1 flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 cursor-pointer transition-all ${
                     isLoading
-                      ? "border-gray-200 bg-gray-50 cursor-not-allowed"
-                      : "border-gray-300 bg-gray-50/70 hover:bg-indigo-50 hover:border-indigo-300"
+                      ? "border-zinc-300 bg-zinc-50 cursor-not-allowed"
+                      : "border-zinc-300 bg-white hover:bg-zinc-50 hover:border-indigo-300"
                   }`}
                 >
-                  <IconCamera className="w-4 h-4 text-gray-400 shrink-0" />
-                  <span className="text-sm text-gray-500 truncate">
+                  <IconCamera className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <span className="text-sm text-zinc-500 truncate">
                     {filePreview ? "Change photo" : "Upload a photo"}
                   </span>
                 </label>
@@ -452,7 +452,7 @@ export default function RegisterPage() {
                   className="hidden"
                 />
                 {filePreview && (
-                  <div className="relative w-9 h-9 rounded-lg overflow-hidden border-2 border-gray-200 shrink-0">
+                  <div className="relative w-9 h-9 rounded-md overflow-hidden border-2 border-zinc-300 shrink-0">
                     <Image src={filePreview} alt="Preview" fill className="object-cover" />
                   </div>
                 )}
@@ -462,7 +462,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-2.5 transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              className="w-full bg-teal-800 hover:bg-teal-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-md py-2.5 transition-all duration-300  flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -475,9 +475,9 @@ export default function RegisterPage() {
               ) : "Create Account"}
             </button>
 
-            <div className="text-center text-xs text-gray-600 pb-1">
+            <div className="text-center text-xs text-zinc-600 pb-1">
               Already have an account?{" "}
-              <Link href="/login" className="text-indigo-600 font-medium hover:underline">
+              <Link href="/login" className="text-teal-800 font-medium hover:underline">
                 Login here
               </Link>
             </div>

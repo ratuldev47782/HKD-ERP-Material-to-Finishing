@@ -23,18 +23,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
    text, caramel/mocha accents instead of flat gray/white)
    ============================================================ */
 const T = {
-  bg: "#EFE6D8",
-  panel: "#FBF6EE",
-  panelAlt: "#F3E9D8",
-  line: "#DCC9AC",
-  amber: "#B0700E",
-  teal: "#5C7A5A",
-  sage: "#7A8C4C",
-  brick: "#A8522E",
-  slateBlue: "#7A6248",
-  gray: "#9C8568",
-  text: "#3A2A1A",
-  muted: "#8A7256",
+  bg: "#f4f4f5",
+  panel: "#ffffff",
+  panelAlt: "#fafafa",
+  line: "#d4d4d8",
+  amber: "#115e59",
+  teal: "#115e59",
+  sage: "#0f766e",
+  brick: "#b91c1c",
+  slateBlue: "#52525b",
+  gray: "#71717a",
+  text: "#18181b",
+  muted: "#71717a",
 };
 
 const displayFont = `'Barlow Condensed', 'Oswald', sans-serif`;
@@ -227,8 +227,8 @@ export default function MaterialDashboardPage() {
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         * { box-sizing: border-box; }
         html, body { overflow: hidden; }
-        .rack-cell { transition: transform 0.1s ease, box-shadow 0.1s ease; position: relative; }
-        .rack-cell:hover { transform: scale(1.12); box-shadow: 0 0 0 1px ${T.amber}; z-index: 20; }
+        .rack-cell { transition: transform 0.1s ease, box- 0.1s ease; position: relative; }
+        .rack-cell:hover { transform: scale(1.12); box-: 0 0 0 1px ${T.amber}; z-index: 20; }
         .rack-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
         .rack-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .rack-scroll::-webkit-scrollbar-thumb { background: ${T.line}; border-radius: 3px; }

@@ -134,59 +134,59 @@ export default function ManageUsersPage() {
   if (loading || !canManageUsers) return null;
 
   return (
-    <section className="min-h-screen bg-gray-50 px-4 py-10">
+    <section className="min-h-screen bg-zinc-100 px-4 py-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Manage Users</h1>
+        <h1 className="text-2xl font-bold text-zinc-800 mb-6">Manage Users</h1>
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {fetching ? (
-          <p className="text-gray-500">Loading users...</p>
+          <p className="text-zinc-500">Loading users...</p>
         ) : (
-          <div className="bg-white rounded-xl shadow overflow-x-auto">
+          <div className="bg-white rounded-md  overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100 text-gray-600 text-left">
+              <thead className="border-b border-zinc-300 bg-zinc-50 text-left text-zinc-500">
                 <tr>
-                  <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Email</th>
-                  <th className="px-4 py-2">Role</th>
-                  <th className="px-4 py-2">Department</th>
-                  <th className="px-4 py-2">Floor</th>
-                  <th className="px-4 py-2">Factory</th>
-                  <th className="px-4 py-2">Joined</th>
-                  <th className="px-4 py-2"></th>
+                  <th className="px-3 py-2.5">Name</th>
+                  <th className="px-3 py-2.5">Email</th>
+                  <th className="px-3 py-2.5">Role</th>
+                  <th className="px-3 py-2.5">Department</th>
+                  <th className="px-3 py-2.5">Floor</th>
+                  <th className="px-3 py-2.5">Factory</th>
+                  <th className="px-3 py-2.5">Joined</th>
+                  <th className="px-3 py-2.5"></th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
                   <Fragment key={u.id}>
-                    <tr className="border-t border-gray-100">
+                    <tr className="border-t border-zinc-200 hover:bg-zinc-50">
                       <td className="px-4 py-2 flex items-center gap-2 whitespace-nowrap">
                         {u.profile_picture ? (
                           <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
                             <Image src={u.profile_picture} alt={u.user_name} fill className="object-cover" />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-semibold shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-zinc-200 text-zinc-400 flex items-center justify-center text-xs font-semibold shrink-0">
                             {u.user_name?.[0]?.toUpperCase() || "?"}
                           </div>
                         )}
                         {u.user_name}
                       </td>
-                      <td className="px-4 py-2">{u.email || "—"}</td>
-                      <td className="px-4 py-2">{u.role}</td>
-                      <td className="px-4 py-2">{u.department || "-"}</td>
-                      <td className="px-4 py-2">{u.assigned_building}</td>
-                      <td className="px-4 py-2">{u.factory}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-gray-500">{fmt(u.createdAt)}</td>
+                      <td className="px-3 py-2.5">{u.email || "—"}</td>
+                      <td className="px-3 py-2.5">{u.role}</td>
+                      <td className="px-3 py-2.5">{u.department || "-"}</td>
+                      <td className="px-3 py-2.5">{u.assigned_building}</td>
+                      <td className="px-3 py-2.5">{u.factory}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-zinc-500">{fmt(u.createdAt)}</td>
                       <td className="px-4 py-2 text-right">
                         <button
                           onClick={() => toggleEdit(u)}
-                          className="text-indigo-600 hover:underline text-sm"
+                          className="text-teal-800 hover:underline text-sm"
                         >
                           {editingRow === u.user_name ? "Close" : "Edit"}
                         </button>
@@ -194,50 +194,50 @@ export default function ManageUsersPage() {
                     </tr>
 
                     {editingRow === u.user_name && editingUser && (
-                      <tr className="border-t border-gray-100 bg-indigo-50/40">
+                      <tr className="border-t border-zinc-200 bg-zinc-50/40">
                         <td colSpan={8} className="px-4 py-4">
                           <form onSubmit={saveEdit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Name</label>
                               <input
                                 type="text"
                                 value={editingUser.user_name}
                                 onChange={(e) => updateField("user_name", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Email</label>
                               <input
                                 type="email"
                                 value={editingUser.email}
                                 onChange={(e) => updateField("email", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Password</label>
                               <input
                                 type="text"
                                 value={editingUser.password}
                                 onChange={(e) => updateField("password", e.target.value)}
                                 disabled={saving}
                                 placeholder="No password set"
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Role</label>
                               <select
                                 value={editingUser.role}
                                 onChange={(e) => updateField("role", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               >
                                 <option value="">Select role</option>
                                 {ROLE_OPTIONS.map((r) => (
@@ -247,12 +247,12 @@ export default function ManageUsersPage() {
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Department</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Department</label>
                               <select
                                 value={editingUser.department}
                                 onChange={(e) => updateField("department", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               >
                                 <option value="">Select department</option>
                                 {DEPARTMENT_OPTIONS.map((d) => (
@@ -262,12 +262,12 @@ export default function ManageUsersPage() {
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Floor</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Floor</label>
                               <select
                                 value={editingUser.assigned_building}
                                 onChange={(e) => updateField("assigned_building", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               >
                                 <option value="">Select floor</option>
                                 {FLOOR_OPTIONS.map((f) => (
@@ -277,12 +277,12 @@ export default function ManageUsersPage() {
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Factory</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Factory</label>
                               <select
                                 value={editingUser.factory}
                                 onChange={(e) => updateField("factory", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               >
                                 <option value="">Select factory</option>
                                 {FACTORY_OPTIONS.map((f) => (
@@ -292,13 +292,13 @@ export default function ManageUsersPage() {
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Joined</label>
+                              <label className="block text-xs font-medium text-zinc-600 mb-1">Joined</label>
                               <input
                                 type="datetime-local"
                                 value={editingUser.createdAt}
                                 onChange={(e) => updateField("createdAt", e.target.value)}
                                 disabled={saving}
-                                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25"
                               />
                             </div>
 
@@ -306,7 +306,7 @@ export default function ManageUsersPage() {
                               <button
                                 type="submit"
                                 disabled={saving}
-                                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 text-white font-semibold rounded-lg px-4 py-2 text-sm flex items-center gap-2"
+                                className="bg-teal-800 hover:bg-teal-900 disabled:opacity-70 text-white font-semibold rounded-md px-4 py-2 text-sm flex items-center gap-2"
                               >
                                 {saving ? (
                                   <>
@@ -322,7 +322,7 @@ export default function ManageUsersPage() {
                                 type="button"
                                 onClick={() => { setEditingRow(null); setEditingUser(null); }}
                                 disabled={saving}
-                                className="border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                className="border border-zinc-300 rounded-md px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
                               >
                                 Cancel
                               </button>

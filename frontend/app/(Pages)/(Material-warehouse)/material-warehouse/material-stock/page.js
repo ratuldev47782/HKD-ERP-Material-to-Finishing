@@ -5,7 +5,7 @@ import React from "react";
 import {
   ArrowUpDown, Boxes, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, ChevronUp, Clock, Database, Filter,
-  RotateCcw, Search, SlidersHorizontal, TrendingUp,
+  RotateCcw, Search, SlidersHorizontal, TrendingUp, X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -33,6 +33,12 @@ const inputCls =
 const btnPrimary = `inline-flex items-center gap-2 rounded-md bg-teal-800 px-4 py-2 text-sm font-medium text-white hover:bg-teal-900 disabled:opacity-60 ${focus}`;
 const btnSecondary = `inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60 ${focus}`;
 const btnIcon = `inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 ${focus}`;
+
+const inputSm =
+  "w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 " +
+  "placeholder:text-zinc-400 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/25";
+const btnSm = `inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 ${focus}`;
+const btnPrimarySm = `inline-flex items-center gap-1.5 rounded-md bg-teal-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-900 disabled:opacity-60 ${focus}`;
 
 const th = "px-3 py-2.5 font-medium";
 const td = "px-3 py-2 align-top border-b border-zinc-200";
@@ -164,8 +170,8 @@ function ColumnsMenu({ visibleKeys, setVisibleKeys }) {
 
   return (
     <div className="relative" ref={ref}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
-        <SlidersHorizontal className="h-4 w-4" />
+      <button type="button" onClick={() => setOpen((o) => !o)} className={btnSm}>
+        <SlidersHorizontal className="h-3.5 w-3.5" />
         Columns
         <span className="text-xs font-semibold tabular-nums text-teal-800">({visibleKeys.length})</span>
       </button>
@@ -195,67 +201,54 @@ function ColumnsMenu({ visibleKeys, setVisibleKeys }) {
   );
 }
 
-// ─── Filter panel ──────────────────────────────────────────────────────────────
+// ─── Filter panel (compact) ────────────────────────────────────────────────────
 function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
   const active = Object.values(filters).filter((v) => v?.trim()).length;
   const filled = "border-teal-700 bg-teal-50/40";
 
   return (
     <form onSubmit={onSearch} className="rounded-md border border-zinc-300 bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-teal-800" />
-          <h3 className="text-sm font-semibold text-zinc-900">Search filters</h3>
+          <Filter className="h-3.5 w-3.5 text-teal-800" />
+          <h3 className="text-xs font-semibold text-zinc-900">Search filters</h3>
           {active > 0 && (
-            <span className="rounded-md bg-teal-800 px-2 py-0.5 text-xs font-medium tabular-nums text-white">
+            <span className="rounded bg-teal-800 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white">
               {active} active
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onReset} disabled={loading || active === 0} className={btnSecondary}>
-            <RotateCcw className="h-4 w-4" />
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={onReset} disabled={loading || active === 0} className={btnSm}>
+            <RotateCcw className="h-3.5 w-3.5" />
             Reset
           </button>
-          <button type="submit" disabled={loading} className={btnPrimary}>
-            <Search className="h-4 w-4" />
+          <button type="submit" disabled={loading} className={btnPrimarySm}>
+            <Search className="h-3.5 w-3.5" />
             {loading ? "Searching…" : "Search"}
           </button>
         </div>
       </div>
 
-      {/* Date range (inclusive on both ends) */}
-      <div className="flex flex-wrap items-end gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3">
+      <div className="grid grid-cols-2 items-end gap-2 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         <div>
-          <label className="mb-1 block text-xs text-zinc-500">Date from</label>
+          <label className="mb-0.5 block text-[10px] text-zinc-500">Date from</label>
           <input
             type="date"
             value={filters.dateFrom}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-            className={`${inputCls} w-40 ${filters.dateFrom ? filled : ""}`}
+            className={`${inputSm} ${filters.dateFrom ? filled : ""}`}
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-500">Date to</label>
+          <label className="mb-0.5 block text-[10px] text-zinc-500">Date to</label>
           <input
             type="date"
             value={filters.dateTo}
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-            className={`${inputCls} w-40 ${filters.dateTo ? filled : ""}`}
+            className={`${inputSm} ${filters.dateTo ? filled : ""}`}
           />
         </div>
-        {(filters.dateFrom || filters.dateTo) && (
-          <button
-            type="button"
-            onClick={() => setFilters({ ...filters, dateFrom: "", dateTo: "" })}
-            className="mb-2.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:underline"
-          >
-            Clear dates
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {FILTER_FIELDS.map((f) => (
           <div key={f.key} className="relative">
             <input
@@ -264,12 +257,12 @@ function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
               onChange={(e) => setFilters({ ...filters, [f.key]: e.target.value })}
               placeholder={f.label}
               title={f.label}
-              className={`${inputCls} pr-7 ${filters[f.key] ? filled : ""}`}
+              className={`${inputSm} pr-6 ${filters[f.key] ? filled : ""}`}
             />
             {filters[f.key] && (
               <button type="button" aria-label={`Clear ${f.label}`}
                 onClick={() => setFilters({ ...filters, [f.key]: "" })}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-base leading-none text-zinc-400 hover:text-zinc-700">
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-sm leading-none text-zinc-400 hover:text-zinc-700">
                 ×
               </button>
             )}
@@ -280,121 +273,103 @@ function FilterPanel({ filters, setFilters, onSearch, onReset, loading }) {
   );
 }
 
-// ─── Summary table (Table 1) ───────────────────────────────────────────────────
-function SummaryTable({ summary }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  if (!summary?.length) return null;
-
-  const q = query.trim().toLowerCase();
-  const rows = q
-    ? summary.filter((s) => s.itemCodePdm?.toLowerCase().includes(q) || s.color?.toLowerCase().includes(q))
-    : summary;
+// ─── Side drawer (slides in from the right) ────────────────────────────────────
+function SideDrawer({ open, onClose, title, icon: Icon, badge, toolbar, children }) {
+  useEffect(() => {
+    if (!open) return;
+    const fn = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", fn);
+    return () => document.removeEventListener("keydown", fn);
+  }, [open, onClose]);
 
   return (
-    <section className="rounded-md border border-zinc-300 bg-white">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <TrendingUp className="h-4 w-4 text-teal-800" />
-          <h3 className="text-sm font-semibold text-zinc-900">Total available</h3>
-          <span className="rounded-md bg-teal-800 px-2 py-0.5 text-xs font-medium tabular-nums text-white">
-            {rows.length}{q ? ` / ${summary.length}` : ""}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {open && (
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search item or color…" className={`${inputCls} w-48`} />
-          )}
-          <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
-            {open ? "Hide" : "Show"}
+    <div className={`fixed inset-0 z-40 ${open ? "" : "pointer-events-none"}`}>
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-zinc-900/30 transition-opacity duration-200 motion-reduce:transition-none ${open ? "opacity-100" : "opacity-0"}`}
+      />
+      <aside
+        role="dialog"
+        aria-label={title}
+        inert={!open}
+        className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-zinc-300 bg-white transition-transform duration-200 ease-out motion-reduce:transition-none ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <Icon className="h-4 w-4 text-teal-800" />
+            <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
+            {badge != null && (
+              <span className="rounded bg-teal-800 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white">{badge}</span>
+            )}
+          </div>
+          <button type="button" onClick={onClose} className={btnIcon} title="Close" aria-label="Close panel">
+            <X className="h-4 w-4" />
           </button>
         </div>
-      </div>
-
-      {open && (
-        rows.length === 0
-          ? <p className="border-t border-zinc-200 px-4 py-12 text-center text-sm text-zinc-500">No matches found.</p>
-          : (
-            <div className="max-h-60 overflow-auto border-t border-zinc-200">
-              <table className="w-full text-left text-[13px]">
-                <thead className={thead}>
-                  <tr>
-                    <th className={th}>Item Code / PDM</th>
-                    <th className={th}>Color</th>
-                    <th className={`${th} text-right`}>Avail. Roll</th>
-                    <th className={`${th} text-right`}>Avail. Yds</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 text-zinc-800 tabular-nums">
-                  {rows.map((s) => (
-                    <tr key={`${s.itemCodePdm}-${s.color}`} className="hover:bg-zinc-50">
-                      <td className="px-3 py-2 align-top font-medium text-teal-800 break-words">{s.itemCodePdm}</td>
-                      <td className="px-3 py-2 align-top break-words">{s.color}</td>
-                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(s.totalAvailableRoll)}</td>
-                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(s.totalAvailableYds)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-      )}
-    </section>
+        {toolbar && <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-2">{toolbar}</div>}
+        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+      </aside>
+    </div>
   );
 }
 
-// ─── Inventory Ageing summary (Table 1b) ───────────────────────────────────────
-function AgeingSummary({ ageing }) {
-  const [open, setOpen] = useState(false);
-  if (!ageing?.length) return null;
-
-  const totalAvailableYds = ageing.reduce((s, a) => s + (Number(a.totalAvailableYds) || 0), 0);
-
+// ─── Total available (drawer content) ──────────────────────────────────────────
+function SummaryContent({ rows }) {
+  if (rows.length === 0)
+    return <p className="px-4 py-12 text-center text-sm text-zinc-500">No matches found.</p>;
   return (
-    <section className="rounded-md border border-zinc-300 bg-white">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <Clock className="h-4 w-4 text-teal-800" />
-          <h3 className="text-sm font-semibold text-zinc-900">Inventory ageing</h3>
-        </div>
-        <button type="button" onClick={() => setOpen((o) => !o)} className={btnSecondary}>
-          {open ? "Hide" : "Show"}
-        </button>
-      </div>
+    <table className="w-full text-left text-[13px]">
+      <thead className={thead}>
+        <tr>
+          <th className={th}>Item Code / PDM</th>
+          <th className={th}>Color</th>
+          <th className={`${th} text-right`}>Avail. Roll</th>
+          <th className={`${th} text-right`}>Avail. Yds</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-zinc-200 text-zinc-800 tabular-nums">
+        {rows.map((s) => (
+          <tr key={`${s.itemCodePdm}-${s.color}`} className="hover:bg-zinc-50">
+            <td className="break-words px-3 py-2 align-top font-medium text-teal-800">{s.itemCodePdm}</td>
+            <td className="break-words px-3 py-2 align-top">{s.color}</td>
+            <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(s.totalAvailableRoll)}</td>
+            <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(s.totalAvailableYds)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
-      {open && (
-        totalAvailableYds === 0
-          ? <p className="border-t border-zinc-200 px-4 py-12 text-center text-sm text-zinc-500">No stock in the current results to age.</p>
-          : (
-            <div className="overflow-auto border-t border-zinc-200">
-              <table className="w-full text-left text-[13px]">
-                <thead className={thead}>
-                  <tr>
-                    <th className={th}>Age Bucket</th>
-                    <th className={`${th} text-right`}>Avail. Roll</th>
-                    <th className={`${th} text-right`}>Avail. Yds</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 text-zinc-800 tabular-nums">
-                  {ageing.map((a) => (
-                    <tr key={a.ageBucket} className="hover:bg-zinc-50">
-                      <td className="px-3 py-2 align-top">
-                        <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium text-white"
-                          style={{ background: AGE_BUCKET_COLORS[a.ageBucket] || "#71717a" }}>
-                          {a.ageBucket}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(a.totalAvailableRoll)}</td>
-                      <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(a.totalAvailableYds)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-      )}
-    </section>
+// ─── Inventory ageing (drawer content) ─────────────────────────────────────────
+function AgeingContent({ ageing }) {
+  const totalAvailableYds = ageing.reduce((s, a) => s + (Number(a.totalAvailableYds) || 0), 0);
+  if (totalAvailableYds === 0)
+    return <p className="px-4 py-12 text-center text-sm text-zinc-500">No stock in the current results to age.</p>;
+  return (
+    <table className="w-full text-left text-[13px]">
+      <thead className={thead}>
+        <tr>
+          <th className={th}>Age Bucket</th>
+          <th className={`${th} text-right`}>Avail. Roll</th>
+          <th className={`${th} text-right`}>Avail. Yds</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-zinc-200 text-zinc-800 tabular-nums">
+        {ageing.map((a) => (
+          <tr key={a.ageBucket} className="hover:bg-zinc-50">
+            <td className="px-3 py-2 align-top">
+              <span className="inline-flex rounded-md px-2 py-0.5 text-xs font-medium text-white"
+                style={{ background: AGE_BUCKET_COLORS[a.ageBucket] || "#71717a" }}>
+                {a.ageBucket}
+              </span>
+            </td>
+            <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(a.totalAvailableRoll)}</td>
+            <td className="px-3 py-2 text-right align-top font-semibold text-teal-800">{fmtNum(a.totalAvailableYds)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -750,6 +725,9 @@ export default function MaterialStockPage() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
   const [visibleKeys, setVisibleKeys] = useState(DEFAULT_KEYS);
+  const [panel, setPanel] = useState(null); // null | "summary" | "ageing"
+  const [summaryQuery, setSummaryQuery] = useState("");
+  const closePanel = useCallback(() => setPanel(null), []);
 
   useEffect(() => { setVisibleKeys(loadSavedColumns()); }, []);
   useEffect(() => {
@@ -782,6 +760,11 @@ export default function MaterialStockPage() {
   const totalRoll = rows.reduce((s, r) => s + (Number(r.availableRoll) || 0), 0);
   const totalYds = rows.reduce((s, r) => s + (Number(r.availableYds) || 0), 0);
 
+  const sq = summaryQuery.trim().toLowerCase();
+  const summaryRows = sq
+    ? summary.filter((x) => x.itemCodePdm?.toLowerCase().includes(sq) || x.color?.toLowerCase().includes(sq))
+    : summary;
+
   return (
     <div className={`min-h-screen bg-zinc-100 text-zinc-900 ${plex.className}`}>
       <main className="mx-auto max-w-[1440px] space-y-4 p-4 pt-16 md:p-5 md:pt-5">
@@ -792,7 +775,18 @@ export default function MaterialStockPage() {
             <h2 className="text-2xl font-semibold text-zinc-900">Material Stock</h2>
             <p className="mt-0.5 text-sm tabular-nums text-zinc-500">Warehouse inventory management</p>
           </div>
-          <ColumnsMenu visibleKeys={visibleKeys} setVisibleKeys={setVisibleKeys} />
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => setPanel("summary")} disabled={!summary.length} className={btnSm}>
+              <TrendingUp className="h-3.5 w-3.5 text-teal-800" />
+              Total available
+              <span className="rounded bg-teal-800 px-1.5 text-[11px] tabular-nums text-white">{summary.length}</span>
+            </button>
+            <button type="button" onClick={() => setPanel("ageing")} disabled={!ageingSummary.length} className={btnSm}>
+              <Clock className="h-3.5 w-3.5 text-teal-800" />
+              Inventory ageing
+            </button>
+            <ColumnsMenu visibleKeys={visibleKeys} setVisibleKeys={setVisibleKeys} />
+          </div>
         </div>
 
         {/* ── KPI strip ── */}
@@ -816,12 +810,6 @@ export default function MaterialStockPage() {
           onSearch={handleSubmit} onReset={handleReset} loading={loading}
         />
 
-        {/* ── Table 1: Summary ── */}
-        <SummaryTable summary={summary} />
-
-        {/* ── Table 1b: Inventory Ageing ── */}
-        <AgeingSummary ageing={ageingSummary} />
-
         {/* ── Table 2: Stock Batches ── */}
         <StockTable
           rows={rows} loading={loading}
@@ -832,6 +820,25 @@ export default function MaterialStockPage() {
           Showing {rows.length.toLocaleString()} stock records
         </p>
       </main>
+
+      {/* ── Side drawers ── */}
+      <SideDrawer
+        open={panel === "summary"} onClose={closePanel}
+        title="Total available" icon={TrendingUp} badge={summary.length}
+        toolbar={
+          <input type="text" value={summaryQuery} onChange={(e) => setSummaryQuery(e.target.value)}
+            placeholder="Search item or color…" className={inputSm} />
+        }
+      >
+        <SummaryContent rows={summaryRows} />
+      </SideDrawer>
+
+      <SideDrawer
+        open={panel === "ageing"} onClose={closePanel}
+        title="Inventory ageing" icon={Clock}
+      >
+        <AgeingContent ageing={ageingSummary} />
+      </SideDrawer>
     </div>
   );
 }

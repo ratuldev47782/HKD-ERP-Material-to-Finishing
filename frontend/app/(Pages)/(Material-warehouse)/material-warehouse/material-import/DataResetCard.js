@@ -37,17 +37,17 @@ export default function DataResetCard() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-red-200 shadow-sm p-4 space-y-3">
+    <div className="bg-white rounded-md border border-red-300  p-4 space-y-3">
       <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
         <AlertTriangle size={16} /> Danger Zone
       </div>
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-zinc-600">
         Deletes all Material Receive, Inspection, Stock/Rack and Stock History data.
         User accounts are not affected. This cannot be undone.
       </p>
 
       {done && (
-        <div className="rounded-lg border border-green-200 bg-green-50 text-green-700 text-xs px-3 py-2">
+        <div className="rounded-md border border-teal-700/30 bg-teal-800/10 text-teal-800 text-xs px-3 py-2">
           All warehouse data deleted.
         </div>
       )}
@@ -56,13 +56,13 @@ export default function DataResetCard() {
         <button
           type="button"
           onClick={() => { setOpen(true); setDone(false); }}
-          className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white text-red-600 text-sm font-semibold px-4 py-2 hover:bg-red-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-white text-red-700 text-sm font-semibold px-4 py-2 hover:bg-red-50 transition-colors"
         >
           <Trash2 size={14} /> Delete All Data
         </button>
       ) : (
-        <div className="space-y-2.5 rounded-lg border border-red-200 bg-red-50/60 p-3">
-          <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+        <div className="space-y-2.5 rounded-md border border-red-300 bg-red-50/60 p-3">
+          <label className="flex items-center gap-2 text-xs text-zinc-700 cursor-pointer">
             <input
               type="checkbox"
               checked={includeCutting}
@@ -72,14 +72,14 @@ export default function DataResetCard() {
             Also delete Cutting Requisitions (recommended, since their issued qty comes from this stock)
           </label>
 
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-zinc-600">
             Type <b className="text-red-700">{CONFIRM_TEXT}</b> to confirm:
           </div>
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+            className="w-full rounded-md border border-red-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
           />
 
           {error && <div className="text-xs font-semibold text-red-700">{error}</div>}
@@ -89,7 +89,7 @@ export default function DataResetCard() {
               type="button"
               onClick={handleDelete}
               disabled={busy || text !== CONFIRM_TEXT}
-              className="inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40 disabled:pointer-events-none"
+              className="inline-flex items-center gap-2 rounded-md bg-red-700 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40 disabled:pointer-events-none"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               {busy ? "Deleting..." : "Delete Everything"}
@@ -98,7 +98,7 @@ export default function DataResetCard() {
               type="button"
               onClick={close}
               disabled={busy}
-              className="rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-medium px-3 py-2 hover:border-[#3B9ED4] hover:text-[#3B9ED4]"
+              className="rounded-md border border-zinc-300 bg-white text-zinc-600 text-sm font-medium px-3 py-2 hover:border-teal-700 hover:text-teal-800"
             >
               Cancel
             </button>

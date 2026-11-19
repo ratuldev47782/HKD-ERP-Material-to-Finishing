@@ -91,7 +91,7 @@ function NotifBadge({ count, className = "" }) {
   if (!count) return null;
   return (
     <span
-      className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#a04a3a] text-white text-[9px] font-bold ${className}`}
+      className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-700 text-white text-[9px] font-bold ${className}`}
     >
       {count > 99 ? "99+" : count}
     </span>
@@ -176,8 +176,8 @@ export default function DeptSidebar() {
         className={`group relative flex items-center gap-3 h-8 rounded-md px-2 transition-all duration-150
           ${
             active
-              ? "bg-black/[0.08] dark:bg-white/[0.09] text-slate-900 dark:text-[#ececec]"
-              : "text-slate-600 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-[#ececec]"
+              ? "bg-black/[0.08]  text-zinc-900 "
+              : "text-zinc-600  hover:bg-black/5  hover:text-zinc-900 "
           }
           ${expanded ? (indent ? "ml-4" : "") : "justify-center"}`}
       >
@@ -191,7 +191,7 @@ export default function DeptSidebar() {
           // Collapsed icon-only rail: no room for a pill, so a small red dot
           // on the icon's corner signals "something's unread" instead.
           unread > 0 && (
-            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[#a04a3a]" />
+            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-700" />
           )
         )}
       </Link>
@@ -211,12 +211,12 @@ export default function DeptSidebar() {
     return (
       <div
         key={dept.label}
-        className="relative flex items-center justify-center h-8 w-8 rounded-md text-slate-600 dark:text-[#8a8a8a]"
+        className="relative flex items-center justify-center h-8 w-8 rounded-md text-zinc-600 "
         title={`${dept.label}${deptUnread ? ` (${deptUnread} unread)` : ""}`}
       >
         <Icon size={18} strokeWidth={1.75} className="flex-shrink-0" />
         {deptUnread > 0 && (
-          <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[#a04a3a]" />
+          <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-700" />
         )}
       </div>
     );
@@ -227,8 +227,8 @@ export default function DeptSidebar() {
     // departments are reachable on mobile via the drawer in TopNavbar.
     <aside
       className={`hidden md:flex fixed left-0 top-14 bottom-0 z-30 flex-col
-        bg-[#f9f9f8] dark:bg-[#212121]
-        border-r border-black/5 dark:border-white/[0.07]
+        bg-white 
+        border-r border-black/5 
         transition-all duration-200 ease-in-out
         ${expanded ? "w-52" : "w-[52px]"}`}
     >
@@ -237,13 +237,13 @@ export default function DeptSidebar() {
         className={`flex items-center h-12 px-3 flex-shrink-0 ${expanded ? "justify-between" : "justify-center"}`}
       >
         {expanded && (
-          <span className="text-[12px] font-semibold text-slate-600 dark:text-[#c9c9c9] truncate uppercase tracking-wide">
+          <span className="text-[12px] font-semibold text-zinc-600  truncate uppercase tracking-wide">
             Departments
           </span>
         )}
         <button
           onClick={() => setExpanded((p) => !p)}
-          className="h-7 w-7 rounded-md flex items-center justify-center text-slate-400 dark:text-[#8a8a8a] hover:text-slate-700 dark:hover:text-[#ececec] hover:bg-black/5 dark:hover:bg-white/[0.06] transition-all"
+          className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-400  hover:text-zinc-700  hover:bg-black/5  transition-all"
         >
           {expanded ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
         </button>
@@ -259,7 +259,7 @@ export default function DeptSidebar() {
             {/* Expanded: show full department with folders */}
             {expanded && (
               <>
-                <div className="flex items-center gap-2 h-8 px-2 text-slate-500 dark:text-[#8a8a8a]">
+                <div className="flex items-center gap-2 h-8 px-2 text-zinc-500 ">
                   <dept.icon size={14} strokeWidth={1.75} className="flex-shrink-0" />
                   <span className="text-[11px] font-semibold uppercase tracking-wide truncate">{dept.label}</span>
                 </div>
@@ -276,7 +276,7 @@ export default function DeptSidebar() {
                     <div key={key} className="flex flex-col gap-0.5">
                       <button
                         onClick={() => toggleFolder(key)}
-                        className="flex items-center gap-1.5 h-7 px-2 ml-1 rounded-md text-slate-500 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] hover:text-slate-800 dark:hover:text-[#ececec] transition-all"
+                        className="flex items-center gap-1.5 h-7 px-2 ml-1 rounded-md text-zinc-500  hover:bg-black/5  hover:text-zinc-800  transition-all"
                       >
                         <ChevronRight size={12} strokeWidth={2} className={`flex-shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`} />
                         <folder.icon size={13} strokeWidth={1.75} className="flex-shrink-0" />

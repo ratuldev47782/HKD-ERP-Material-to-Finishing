@@ -727,7 +727,7 @@ export default function DashboardPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, gap: 10, minHeight: 0 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: displayFont, fontSize: "clamp(15px, 1.8vh, 20px)", fontWeight: 700, color: T.text, whiteSpace: "nowrap" }}>
-            <em style={{ color: T.amber, fontStyle: "italic" }}>Overview</em>
+            <em style={{ color: T.amber, fontStyle: "italic" }}>Overview--</em>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "clamp(6px, 1vw, 14px)", flexShrink: 0 }}>

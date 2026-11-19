@@ -1,32 +1,19 @@
 @import "tailwindcss";
 
-@variant dark (&:where(.dark, .dark *));
-
-:root {
-  --background: #ffffff;
-  --foreground: #1e293b;
-}
-
-.dark {
-  --background: #1a1a1a;
-  --foreground: #ececec;
-}
+/* Theme: Flat Teal & Zinc. All colours come from Tailwind utility classes;
+   these rules only set the page canvas and the font loaded by next/font. */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-roboto-condensed);
-  --font-mono: var(--font-geist-mono);
-  
+  --font-sans: var(--font-plex-sans);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-.dark {
-  color-scheme: dark;
+  background-color: #f4f4f5; /* zinc-100 */
+  color: #18181b; /* zinc-900 */
+  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
 }

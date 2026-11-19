@@ -2,15 +2,12 @@
 
 "use client";
 
-import { useDarkMode } from "@/app/provider/DarkModeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Home,
   LogIn,
   LogOut,
   Menu,
-  Moon,
-  Sun,
   X,
   ShieldUser,
   Palette,
@@ -45,7 +42,6 @@ const DEPARTMENTS = [
 
 export default function TopNavbar() {
   const { user, logout } = useAuth();
-  const { dark, toggleDark } = useDarkMode();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -86,8 +82,8 @@ export default function TopNavbar() {
       {/* ── DESKTOP TOP NAVBAR ─────────────────────────────────────────── */}
       <header
         className="hidden md:flex fixed top-0 left-0 right-0 z-40 h-14 items-center justify-between px-4
-        bg-[#f9f9f8]/95 dark:bg-[#212121]/98 backdrop-blur-md
-        border-b border-black/5 dark:border-white/[0.07]"
+        bg-white  
+        border-b border-zinc-300 "
       >
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
@@ -99,7 +95,7 @@ export default function TopNavbar() {
               className="object-contain"
               priority
             />
-            <span className="text-[14px] font-semibold text-slate-800 dark:text-[#ececec]">
+            <span className="text-[14px] font-semibold text-zinc-800 ">
               HKD OUTDOOR INNOVATIONS LTD.
             </span>
           </Link>
@@ -114,8 +110,8 @@ export default function TopNavbar() {
                   className={`flex items-center gap-2 h-8 px-3 rounded-md text-[13px] font-medium transition-all
                     ${
                       active
-                        ? "bg-black/[0.08] dark:bg-white/[0.09] text-slate-900 dark:text-[#ececec]"
-                        : "text-slate-600 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-[#ececec]"
+                        ? "bg-teal-800/10  text-zinc-900 "
+                        : "text-zinc-600  hover:bg-zinc-50  hover:text-zinc-900 "
                     }`}
                 >
                   <Icon size={15} strokeWidth={active ? 2 : 1.75} />
@@ -130,7 +126,7 @@ export default function TopNavbar() {
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            className="h-8 w-8 rounded-md flex items-center justify-center text-slate-500 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] transition-all"
+            className="h-8 w-8 rounded-md flex items-center justify-center text-zinc-500  hover:bg-zinc-50  transition-all"
           >
             {isFullscreen ? (
               <Minimize size={16} strokeWidth={1.75} />
@@ -139,18 +135,7 @@ export default function TopNavbar() {
             )}
           </button>
 
-          <button
-            onClick={toggleDark}
-            className="h-8 w-8 rounded-md flex items-center justify-center text-slate-500 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] transition-all"
-          >
-            {dark ? (
-              <Sun size={16} strokeWidth={1.75} />
-            ) : (
-              <Moon size={16} strokeWidth={1.75} />
-            )}
-          </button>
-
-          <div className="h-5 w-px bg-black/10 dark:bg-white/10 mx-1" />
+          <div className="h-5 w-px bg-zinc-300  mx-1" />
 
           {user ? (
             <button
@@ -158,11 +143,11 @@ export default function TopNavbar() {
               className={`flex items-center gap-2 h-8 pl-1 pr-2.5 rounded-md transition-all
                 ${
                   panelOpen
-                    ? "bg-black/[0.08] dark:bg-white/[0.09]"
-                    : "hover:bg-black/5 dark:hover:bg-white/[0.06]"
+                    ? "bg-teal-800/10 "
+                    : "hover:bg-zinc-50 "
                 }`}
             >
-              <div className="h-6 w-6 rounded-full overflow-hidden bg-amber-100 dark:bg-[#3d2f1a] flex items-center justify-center text-amber-700 dark:text-[#d4a45a] text-[10px] font-bold flex-shrink-0 ring-1 ring-amber-200 dark:ring-[#5a3e1e]">
+              <div className="h-6 w-6 rounded-full overflow-hidden bg-teal-100  flex items-center justify-center text-teal-700  text-[10px] font-bold flex-shrink-0 ring-1 ring-teal-700/30 ">
                 {user?.profile_picture ? (
                   <img
                     src={user.profile_picture}
@@ -173,14 +158,14 @@ export default function TopNavbar() {
                   userName?.charAt(0)?.toUpperCase() || "U"
                 )}
               </div>
-              <span className="text-[13px] font-medium text-slate-800 dark:text-[#ececec] max-w-[100px] truncate">
+              <span className="text-[13px] font-medium text-zinc-800  max-w-[100px] truncate">
                 {userName}
               </span>
             </button>
           ) : (
             <Link
               href="/login"
-              className="flex items-center gap-2 h-8 px-3 rounded-md text-[13px] font-medium text-slate-600 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-[#ececec] transition-all"
+              className="flex items-center gap-2 h-8 px-3 rounded-md text-[13px] font-medium text-zinc-600  hover:bg-zinc-50  hover:text-zinc-900  transition-all"
             >
               <LogIn size={15} strokeWidth={1.75} />
               Login
@@ -195,8 +180,8 @@ export default function TopNavbar() {
       {/* ── MOBILE TOP BAR ──────────────────────────────────────────── */}
       <header
         className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4
-        bg-[#f9f9f8]/95 dark:bg-[#212121]/98 backdrop-blur-md
-        border-b border-black/5 dark:border-white/[0.07]"
+        bg-white  
+        border-b border-zinc-300 "
       >
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -207,7 +192,7 @@ export default function TopNavbar() {
             className="object-contain"
             priority
           />
-          <span className="text-[14px] font-semibold text-slate-800 dark:text-[#ececec]">
+          <span className="text-[14px] font-semibold text-zinc-800 ">
             HKD Outdoor
           </span>
         </Link>
@@ -215,7 +200,7 @@ export default function TopNavbar() {
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            className="h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] transition-all"
+            className="h-9 w-9 rounded-md flex items-center justify-center text-zinc-500  hover:bg-zinc-50  transition-all"
           >
             {isFullscreen ? (
               <Minimize size={17} strokeWidth={1.75} />
@@ -224,18 +209,8 @@ export default function TopNavbar() {
             )}
           </button>
           <button
-            onClick={toggleDark}
-            className="h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] transition-all"
-          >
-            {dark ? (
-              <Sun size={17} strokeWidth={1.75} />
-            ) : (
-              <Moon size={17} strokeWidth={1.75} />
-            )}
-          </button>
-          <button
             onClick={() => setMobileMenuOpen(true)}
-            className="h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-[#8a8a8a] hover:bg-black/5 dark:hover:bg-white/[0.06] transition-all"
+            className="h-9 w-9 rounded-md flex items-center justify-center text-zinc-500  hover:bg-zinc-50  transition-all"
           >
             <Menu size={19} strokeWidth={1.75} />
           </button>
@@ -245,8 +220,8 @@ export default function TopNavbar() {
       {/* ── MOBILE BOTTOM NAV ───────────────────────────────────────── */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-40
-        bg-[#f9f9f8]/95 dark:bg-[#212121]/98 backdrop-blur-md
-        border-t border-black/5 dark:border-white/[0.07]"
+        bg-white  
+        border-t border-zinc-300 "
       >
         <div className="flex items-center justify-around px-2 py-1">
           {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
@@ -257,12 +232,12 @@ export default function TopNavbar() {
                 href={href}
                 className={`flex flex-col items-center gap-1 px-3 py-2.5 min-w-0 flex-1 transition-all ${
                   active
-                    ? "text-slate-900 dark:text-[#ececec]"
-                    : "text-slate-400 dark:text-[#555]"
+                    ? "text-zinc-900 "
+                    : "text-zinc-400 "
                 }`}
               >
                 <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all ${active ? "bg-black/[0.08] dark:bg-white/[0.09]" : ""}`}
+                  className={`flex items-center justify-center w-8 h-8 rounded-md transition-all ${active ? "bg-teal-800/10 " : ""}`}
                 >
                   <Icon size={18} strokeWidth={active ? 2 : 1.75} />
                 </div>
@@ -276,10 +251,10 @@ export default function TopNavbar() {
           {user ? (
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex flex-col items-center gap-1 px-3 py-2.5 min-w-0 flex-1 text-slate-400 dark:text-[#555] transition-all"
+              className="flex flex-col items-center gap-1 px-3 py-2.5 min-w-0 flex-1 text-zinc-400  transition-all"
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center">
-                <div className="h-6 w-6 rounded-full overflow-hidden bg-amber-100 dark:bg-[#3d2f1a] flex items-center justify-center text-amber-700 dark:text-[#d4a45a] text-[10px] font-bold ring-1 ring-amber-200 dark:ring-[#5a3e1e]">
+              <div className="w-8 h-8 rounded-md flex items-center justify-center">
+                <div className="h-6 w-6 rounded-full overflow-hidden bg-teal-100  flex items-center justify-center text-teal-700  text-[10px] font-bold ring-1 ring-teal-700/30 ">
                   {user?.profile_picture ? (
                     <img
                       src={user.profile_picture}
@@ -296,9 +271,9 @@ export default function TopNavbar() {
           ) : (
             <Link
               href="/login"
-              className="flex flex-col items-center gap-1 px-3 py-2.5 min-w-0 flex-1 text-slate-400 dark:text-[#555]"
+              className="flex flex-col items-center gap-1 px-3 py-2.5 min-w-0 flex-1 text-zinc-400 "
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center">
+              <div className="w-8 h-8 rounded-md flex items-center justify-center">
                 <LogIn size={18} strokeWidth={1.75} />
               </div>
               <span className="text-[10px] font-medium leading-none">
@@ -313,24 +288,24 @@ export default function TopNavbar() {
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[60]">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 "
             onClick={() => setMobileMenuOpen(false)}
           />
 
           <div
             className="absolute bottom-0 left-0 right-0
-            bg-[#f9f9f8] dark:bg-[#252525]
-            rounded-t-2xl shadow-2xl max-h-[80vh] overflow-y-auto"
+            bg-white 
+            rounded-t-md  max-h-[80vh] overflow-y-auto"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
-              <div className="w-9 h-1 bg-slate-200 dark:bg-[#3a3a3a] rounded-full" />
+              <div className="w-9 h-1 bg-zinc-200  rounded-full" />
             </div>
 
             {/* User header */}
             {user && (
               <div className="flex items-center gap-3 px-5 py-3 mb-1">
-                <div className="h-10 w-10 rounded-2xl overflow-hidden bg-amber-100 dark:bg-[#3d2f1a] flex items-center justify-center text-amber-700 dark:text-[#d4a45a] font-bold text-sm ring-1 ring-amber-200 dark:ring-[#5a3e1e] flex-shrink-0">
+                <div className="h-10 w-10 rounded-md overflow-hidden bg-teal-100  flex items-center justify-center text-teal-700  font-bold text-sm ring-1 ring-teal-700/30  flex-shrink-0">
                   {user?.profile_picture ? (
                     <img
                       src={user.profile_picture}
@@ -342,23 +317,23 @@ export default function TopNavbar() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-slate-900 dark:text-[#ececec] truncate">
+                  <p className="text-[14px] font-semibold text-zinc-900  truncate">
                     {userName || "User"}
                   </p>
-                  <p className="text-[11px] text-slate-500 dark:text-[#8a8a8a] truncate">
+                  <p className="text-[11px] text-zinc-500  truncate">
                     {user?.role || "Member"}
                   </p>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="h-8 w-8 rounded-xl bg-slate-100 dark:bg-[#333] flex items-center justify-center text-slate-500 dark:text-[#8a8a8a] flex-shrink-0"
+                  className="h-8 w-8 rounded-md bg-zinc-100  flex items-center justify-center text-zinc-500  flex-shrink-0"
                 >
                   <X size={14} />
                 </button>
               </div>
             )}
 
-            <div className="h-px bg-black/5 dark:bg-white/[0.06] mx-5 mb-2" />
+            <div className="h-px bg-black/5  mx-5 mb-2" />
 
             {/* Primary nav links */}
             <div className="px-3 space-y-0.5">
@@ -369,11 +344,11 @@ export default function TopNavbar() {
                     key={href}
                     href={href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium transition-all
+                    className={`flex items-center gap-3 h-11 px-3 rounded-md text-[14px] font-medium transition-all
                       ${
                         active
-                          ? "bg-black/[0.07] dark:bg-white/[0.08] text-slate-900 dark:text-[#ececec]"
-                          : "text-slate-600 dark:text-[#aaa] hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-[#ececec]"
+                          ? "bg-teal-800/10  text-zinc-900 "
+                          : "text-zinc-600  hover:bg-zinc-50  hover:text-zinc-900 "
                       }`}
                   >
                     <Icon size={17} strokeWidth={active ? 2 : 1.75} />
@@ -385,11 +360,11 @@ export default function TopNavbar() {
                 <Link
                   href="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium transition-all
+                  className={`flex items-center gap-3 h-11 px-3 rounded-md text-[14px] font-medium transition-all
                     ${
                       isActive("/dashboard")
-                        ? "bg-black/[0.07] dark:bg-white/[0.08] text-slate-900 dark:text-[#ececec]"
-                        : "text-slate-600 dark:text-[#aaa] hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-[#ececec]"
+                        ? "bg-teal-800/10  text-zinc-900 "
+                        : "text-zinc-600  hover:bg-zinc-50  hover:text-zinc-900 "
                     }`}
                 >
                   <Settings size={17} strokeWidth={1.75} />
@@ -398,10 +373,10 @@ export default function TopNavbar() {
               )}
             </div>
 
-            <div className="h-px bg-black/5 dark:bg-white/[0.06] mx-5 my-3" />
+            <div className="h-px bg-black/5  mx-5 my-3" />
 
             {/* Departments (side navbar is desktop-only, so surface here on mobile) */}
-            <p className="px-6 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#777]">
+            <p className="px-6 pb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 ">
               Departments
             </p>
             <div className="px-3 space-y-0.5 pb-2">
@@ -412,11 +387,11 @@ export default function TopNavbar() {
                     key={href}
                     href={href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium transition-all
+                    className={`flex items-center gap-3 h-11 px-3 rounded-md text-[14px] font-medium transition-all
                       ${
                         active
-                          ? "bg-black/[0.07] dark:bg-white/[0.08] text-slate-900 dark:text-[#ececec]"
-                          : "text-slate-600 dark:text-[#aaa] hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-[#ececec]"
+                          ? "bg-teal-800/10  text-zinc-900 "
+                          : "text-zinc-600  hover:bg-zinc-50  hover:text-zinc-900 "
                       }`}
                   >
                     <Icon size={17} strokeWidth={active ? 2 : 1.75} />
@@ -426,14 +401,14 @@ export default function TopNavbar() {
               })}
             </div>
 
-            <div className="h-px bg-black/5 dark:bg-white/[0.06] mx-5 my-3" />
+            <div className="h-px bg-black/5  mx-5 my-3" />
 
             {/* Actions */}
             <div className="px-3 pb-8 space-y-0.5">
               <button
                 onClick={toggleFullscreen}
-                className="w-full flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium
-                  text-slate-600 dark:text-[#aaa] hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-[#ececec] transition-all"
+                className="w-full flex items-center gap-3 h-11 px-3 rounded-md text-[14px] font-medium
+                  text-zinc-600  hover:bg-zinc-50  hover:text-zinc-900  transition-all"
               >
                 {isFullscreen ? (
                   <Minimize size={17} strokeWidth={1.75} />
@@ -443,23 +418,10 @@ export default function TopNavbar() {
                 {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               </button>
 
-              <button
-                onClick={toggleDark}
-                className="w-full flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium
-                  text-slate-600 dark:text-[#aaa] hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-[#ececec] transition-all"
-              >
-                {dark ? (
-                  <Sun size={17} strokeWidth={1.75} />
-                ) : (
-                  <Moon size={17} strokeWidth={1.75} />
-                )}
-                {dark ? "Switch to Light" : "Switch to Dark"}
-              </button>
-
               {user ? (
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
+                  className="w-full flex items-center gap-3 h-11 px-3 rounded-md text-[14px] font-medium text-red-700  hover:bg-red-50  transition-all"
                 >
                   <LogOut size={17} strokeWidth={1.75} />
                   Sign out
@@ -468,7 +430,7 @@ export default function TopNavbar() {
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full flex items-center gap-3 h-11 px-3 rounded-xl text-[14px] font-medium text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all"
+                  className="w-full flex items-center gap-3 h-11 px-3 rounded-md text-[14px] font-medium text-teal-800  hover:bg-teal-800/10  transition-all"
                 >
                   <LogIn size={17} strokeWidth={1.75} />
                   Login

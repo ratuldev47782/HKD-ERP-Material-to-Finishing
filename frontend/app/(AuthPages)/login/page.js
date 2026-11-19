@@ -28,9 +28,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const fieldWrapClass =
-    "flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 px-3 transition-all focus-within:bg-white focus-within:shadow-sm focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-400";
+    "flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-teal-700 focus-within:border-teal-700";
   const inputBareClass =
-    "w-full bg-transparent py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed";
+    "w-full bg-transparent py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none disabled:cursor-not-allowed";
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -48,11 +48,11 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="h-screen overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-100 px-4 py-3">
-      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-4xl h-full max-h-[640px] border border-gray-100 flex flex-col md:flex-row overflow-hidden">
+    <section className="h-screen overflow-hidden flex items-center justify-center bg-zinc-100 px-4 py-3">
+      <div className="bg-white  rounded-md w-full max-w-4xl h-full max-h-[640px] border border-zinc-300 flex flex-col md:flex-row overflow-hidden">
 
         {/* LEFT: Illustration */}
-        <div className="hidden md:flex w-1/2 items-center justify-center bg-indigo-50 p-8">
+        <div className="hidden md:flex w-1/2 items-center justify-center bg-zinc-50 p-8">
           <Image
             src="/Computer login-amico.svg"
             alt="Login illustration"
@@ -75,26 +75,26 @@ export default function LoginPage() {
               priority
             />
             <div className="min-w-0">
-              <h1 className="text-lg font-extrabold text-gray-800 leading-tight tracking-tight">
+              <h1 className="text-lg font-semibold text-zinc-800 leading-tight tracking-tight">
                 HKD OUTDOOR INNOVATIONS LTD.
               </h1>
-              <p className="text-xs text-gray-500 mt-0.5">Sign in to your account</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Sign in to your account</p>
             </div>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
             </div>
           )}
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label htmlFor="user_name" className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="user_name" className="block text-xs font-medium text-zinc-700 mb-1">
                 User Name
               </label>
               <div className={fieldWrapClass}>
-                <IconUser className="w-4 h-4 text-gray-400 shrink-0" />
+                <IconUser className="w-4 h-4 text-zinc-400 shrink-0" />
                 <input
                   type="text"
                   id="user_name"
@@ -108,11 +108,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-xs font-medium text-zinc-700 mb-1">
                 Password
               </label>
               <div className={fieldWrapClass}>
-                <IconLock className="w-4 h-4 text-gray-400 shrink-0" />
+                <IconLock className="w-4 h-4 text-zinc-400 shrink-0" />
                 <input
                   type="password"
                   id="password"
@@ -128,7 +128,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-2.5 transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              className="w-full bg-teal-800 hover:bg-teal-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-md py-2.5 transition-all duration-300  flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -142,9 +142,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-500 mt-5">
+          <p className="text-center text-xs text-zinc-500 mt-5">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-indigo-600 hover:text-indigo-800 font-medium">
+            <Link href="/register" className="text-teal-800 hover:text-indigo-800 font-medium">
               Register
             </Link>
           </p>

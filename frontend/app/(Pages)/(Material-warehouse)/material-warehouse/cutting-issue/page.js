@@ -1,7 +1,7 @@
 // frontend/app/(Pages)/(Material-warehouse)/material-warehouse/cutting-issue/page.js
 //
-// Same structure as before -- only the theme changed: #3B9ED4 accent,
-// #F0F4F8 page, white rounded-xl cards, icon-square top bar, #C8E3F5 table
+// Same structure as before -- only the theme changed: #115e59 accent,
+// #fafafa page, white rounded-md cards, icon-square top bar, #e4e4e7 table
 // headers with zebra rows and blue hover, rounded-md chips, light-blue info
 // note. Brown/orange palette, serif headings and every `dark:` class removed.
 // Tables become stacked cards below lg. No data logic or API calls touched.
@@ -18,33 +18,33 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 /* ---------- theme (literal Tailwind class strings) ---------- */
 
-const card = "bg-white rounded-xl border border-gray-200 shadow-sm";
-const soft = "bg-[#EEF6FC] border border-[#D1E4F0]";
+const card = "rounded-md border border-zinc-300 bg-white";
+const soft = "bg-zinc-50 border border-zinc-300";
 const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 " +
-  "shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#3B9ED4]/25 focus:border-[#3B9ED4]";
+  "w-full rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-zinc-800 placeholder:text-zinc-400 " +
+  " transition focus:outline-none focus:ring-2 focus:ring-teal-700/25 focus:border-teal-700";
 const btnPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#3B9ED4] px-4 py-2 text-sm font-semibold text-white " +
-  "shadow-sm transition-colors hover:bg-[#2E8EC4] disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-md bg-teal-800 px-4 py-2 text-sm font-semibold text-white " +
+  " transition-colors hover:bg-teal-900 disabled:opacity-50 disabled:pointer-events-none";
 const btnSecondary =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium " +
-  "text-gray-600 transition-colors hover:border-[#3B9ED4] hover:text-[#3B9ED4] disabled:opacity-40 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium " +
+  "text-zinc-600 transition-colors hover:border-teal-700 hover:text-teal-800 disabled:opacity-40 disabled:pointer-events-none";
 const th =
-  "border-b border-[#A8D3EC] bg-[#C8E3F5] px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-gray-700 whitespace-nowrap";
+  "border-b border-zinc-300 bg-zinc-100 px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-zinc-700 whitespace-nowrap";
 const chipBase = "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold whitespace-nowrap";
-const chip = `${chipBase} bg-[#3B9ED4]/10 text-[#2E8EC4]`;
-const chipAmber = `${chipBase} bg-amber-50 text-amber-700`;
-const chipGreen = `${chipBase} bg-green-50 text-green-700`;
+const chip = `${chipBase} bg-teal-800/10 text-teal-800`;
+const chipAmber = `${chipBase} bg-teal-800/10 text-teal-700`;
+const chipGreen = `${chipBase} bg-teal-800/10 text-teal-800`;
 const scrollThin =
   "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent " +
-  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c8d9e8] " +
-  "[&::-webkit-scrollbar-thumb:hover]:bg-[#9ab8cc] [scrollbar-width:thin] [scrollbar-color:#c8d9e8_transparent]";
+  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-200 " +
+  "[&::-webkit-scrollbar-thumb:hover]:bg-zinc-200 [scrollbar-width:thin] [scrollbar-color:#c8d9e8_transparent]";
 
 const d = (v) => v?.slice(0, 10) || "-";
 
 function statusChip(status) {
   if (status === "fulfilled") return <span className={chipGreen}>Fulfilled</span>;
-  if (status === "partial") return <span className={`${chipBase} bg-sky-50 text-sky-700`}>Partially Issued</span>;
+  if (status === "partial") return <span className={`${chipBase} bg-teal-800/10 text-teal-700`}>Partially Issued</span>;
   return <span className={chipAmber}>Pending</span>;
 }
 
@@ -53,8 +53,8 @@ function statusChip(status) {
 function ErrorBanner({ message }) {
   if (!message) return null;
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
-      <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-600" />
+    <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2.5">
+      <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-700" />
       <span className="break-words text-sm font-bold leading-snug text-red-700 sm:text-base">{message}</span>
     </div>
   );
@@ -65,8 +65,8 @@ function ErrorBanner({ message }) {
 function Field({ label, value, valueClassName = "" }) {
   return (
     <div className="min-w-0">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</div>
-      <div className={`truncate text-sm font-bold text-gray-800 ${valueClassName}`}>{value}</div>
+      <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{label}</div>
+      <div className={`truncate text-sm font-bold text-zinc-800 ${valueClassName}`}>{value}</div>
     </div>
   );
 }
@@ -92,37 +92,37 @@ function NotificationBell({ notifications, unreadCount, onRefresh, onSelect }) {
       <button
         type="button"
         onClick={() => { setOpen((o) => !o); if (!open) onRefresh(); }}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-[#3B9ED4] hover:text-[#3B9ED4]"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500  transition-colors hover:border-teal-700 hover:text-teal-800"
         title="Requisition notifications"
       >
         <Bell size={16} />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-700 px-1 text-[9px] font-bold text-white">
             {unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className={`absolute right-0 z-30 mt-2 max-h-96 w-[min(20rem,calc(100vw-2rem))] space-y-1 overflow-auto p-2 shadow-xl ${card} ${scrollThin}`}>
-          <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">Cutting Requisitions</div>
+        <div className={`absolute right-0 z-30 mt-2 max-h-96 w-[min(20rem,calc(100vw-2rem))] space-y-1 overflow-auto p-2  ${card} ${scrollThin}`}>
+          <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Cutting Requisitions</div>
           {notifications.length === 0 ? (
-            <div className="px-1 py-2 text-xs italic text-gray-400">No requisitions yet.</div>
+            <div className="px-1 py-2 text-xs italic text-zinc-400">No requisitions yet.</div>
           ) : (
             notifications.map((n) => (
               <button
                 key={n.id}
                 type="button"
                 onClick={() => { setOpen(false); onSelect(n.id); }}
-                className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition-colors hover:bg-[#DBEEFF] ${n.isRead ? "" : "bg-[#EEF6FC]"}`}
+                className={`w-full rounded-md px-2.5 py-2 text-left text-xs transition-colors hover:bg-zinc-100 ${n.isRead ? "" : "bg-zinc-50"}`}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {!n.isRead && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />}
-                  <span className="break-words text-sm font-bold text-gray-800">{n.buyer}</span>
-                  <span className="text-gray-400">{n.floor}</span>
+                  {!n.isRead && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-700" />}
+                  <span className="break-words text-sm font-bold text-zinc-800">{n.buyer}</span>
+                  <span className="text-zinc-400">{n.floor}</span>
                   <span className="ml-auto">{statusChip(n.status)}</span>
                 </div>
-                <div className="mt-0.5 break-words text-[11px] font-medium text-gray-500">
+                <div className="mt-0.5 break-words text-[11px] font-medium text-zinc-500">
                   Style {n.style}{n.model ? ` · ${n.model}` : ""} · {n.season} · {d(n.date)}
                 </div>
               </button>
@@ -257,7 +257,7 @@ function IssueForm({ item, requisition, onIssued }) {
   const PickBtn = ({ r, isPicked }) => (
     <button
       type="button" onClick={() => pickRack(r)} disabled={isPicked}
-      className={`inline-flex items-center gap-1 text-[11px] font-bold hover:underline disabled:pointer-events-none ${isPicked ? "text-green-600" : "text-[#3B9ED4]"}`}
+      className={`inline-flex items-center gap-1 text-[11px] font-bold hover:underline disabled:pointer-events-none ${isPicked ? "text-teal-800" : "text-teal-800"}`}
     >
       {isPicked ? <><Check size={11} /> Picked</> : "Pick"}
     </button>
@@ -267,23 +267,23 @@ function IssueForm({ item, requisition, onIssued }) {
     <div className="space-y-2.5">
       <button
         type="button" onClick={checkStock}
-        className={`inline-flex items-center gap-1.5 text-xs font-bold hover:underline ${stockOpen ? "text-[#2E8EC4]" : "text-[#3B9ED4]"}`}
+        className={`inline-flex items-center gap-1.5 text-xs font-bold hover:underline ${stockOpen ? "text-teal-800" : "text-teal-800"}`}
       >
         <Search size={13} /> {stockOpen ? "Hide" : "Check"} stock (rack + date wise)
       </button>
 
       {stockOpen && (
         loadingStock ? (
-          <div className="text-xs italic text-gray-400">Checking existing stock…</div>
+          <div className="text-xs italic text-zinc-400">Checking existing stock…</div>
         ) : stockRows.length === 0 ? (
-          <div className="text-xs italic text-gray-400">No available stock found for this Item Code/PDM.</div>
+          <div className="text-xs italic text-zinc-400">No available stock found for this Item Code/PDM.</div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-[#D1E4F0]">
-            <div className="flex flex-wrap items-center justify-between gap-2 bg-[#EEF6FC] px-3 py-2">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#2E8EC4]">
+          <div className="overflow-hidden rounded-md border border-zinc-300">
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-50 px-3 py-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-800">
                 <Boxes size={13} /> Available Stock ({stockRows.length} rack{stockRows.length > 1 ? "s" : ""})
               </div>
-              <div className="text-[10px] text-gray-500">
+              <div className="text-[10px] text-zinc-500">
                 A different Season or Color than requested is highlighted red; picked racks green.
               </div>
             </div>
@@ -295,19 +295,19 @@ function IssueForm({ item, requisition, onIssued }) {
                 return (
                   <div
                     key={r.itemId}
-                    className={`space-y-2 rounded-lg border border-[#D1E4F0] p-3 ${isPicked ? "bg-green-50/60" : badSeason || badColor ? "bg-red-50/60" : "bg-white"}`}
+                    className={`space-y-2 rounded-md border border-zinc-300 p-3 ${isPicked ? "bg-teal-800/10" : badSeason || badColor ? "bg-red-50/60" : "bg-white"}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-sm font-bold text-[#2E8EC4]"><MapPin size={12} />{r.location}</span>
-                      <span className="ml-auto whitespace-nowrap text-xs font-bold text-gray-800">{r.availableRoll} Roll / {r.availableYds} Yds</span>
+                      <span className="inline-flex items-center gap-1 text-sm font-bold text-teal-800"><MapPin size={12} />{r.location}</span>
+                      <span className="ml-auto whitespace-nowrap text-xs font-bold text-zinc-800">{r.availableRoll} Roll / {r.availableYds} Yds</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg bg-[#EEF6FC] px-3 py-2.5">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-md bg-zinc-50 px-3 py-2.5">
                       <Field label="Date" value={d(r.date)} />
                       <Field label="Buyer" value={r.buyer || "-"} />
-                      <Field label="Season" value={r.season || "-"} valueClassName={badSeason && !isPicked ? "text-red-600" : ""} />
+                      <Field label="Season" value={r.season || "-"} valueClassName={badSeason && !isPicked ? "text-red-700" : ""} />
                       <Field label="Item" value={r.item || "-"} />
-                      <Field label="Item Code/PDM" value={r.itemCodePdm} valueClassName="text-[#2E8EC4]" />
-                      <Field label="Color" value={r.color || "-"} valueClassName={badColor && !isPicked ? "text-red-600" : ""} />
+                      <Field label="Item Code/PDM" value={r.itemCodePdm} valueClassName="text-teal-800" />
+                      <Field label="Color" value={r.color || "-"} valueClassName={badColor && !isPicked ? "text-red-700" : ""} />
                       <div className="col-span-2"><Field label="Style | Model" value={styleLabel} /></div>
                     </div>
                     <div className="flex justify-end"><PickBtn r={r} isPicked={isPicked} /></div>
@@ -330,18 +330,18 @@ function IssueForm({ item, requisition, onIssued }) {
                   {stockRows.map((r, i) => {
                     const { isPicked, badSeason, badColor, styleLabel } = meta(r);
                     // Picked takes visual priority over the mismatch highlight.
-                    const bg = isPicked ? "bg-green-50" : badSeason || badColor ? "bg-red-50" : i % 2 ? "bg-[#F7FBFE]" : "bg-white";
+                    const bg = isPicked ? "bg-teal-800/10" : badSeason || badColor ? "bg-red-50" : i % 2 ? "bg-white" : "bg-white";
                     return (
-                      <tr key={r.itemId} className={`border-b border-gray-100 align-top transition-colors hover:bg-[#DBEEFF] ${bg}`}>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-gray-600">{d(r.date)}</td>
-                        <td className="px-3 py-2.5 text-gray-700">{r.buyer}</td>
-                        <td className={`px-3 py-2.5 font-semibold ${badSeason && !isPicked ? "text-red-600" : "text-gray-700"}`}>{r.season}</td>
-                        <td className="px-3 py-2.5 text-gray-700">{r.item}</td>
-                        <td className="px-3 py-2.5 font-bold text-[#2E8EC4]">{r.itemCodePdm}</td>
-                        <td className={`px-3 py-2.5 ${badColor && !isPicked ? "font-semibold text-red-600" : "text-gray-700"}`}>{r.color}</td>
-                        <td className="px-3 py-2.5 text-gray-600">{styleLabel}</td>
+                      <tr key={r.itemId} className={`border-b border-zinc-200 align-top transition-colors hover:bg-zinc-100 ${bg}`}>
+                        <td className="whitespace-nowrap px-3 py-2.5 text-zinc-600">{d(r.date)}</td>
+                        <td className="px-3 py-2.5 text-zinc-700">{r.buyer}</td>
+                        <td className={`px-3 py-2.5 font-semibold ${badSeason && !isPicked ? "text-red-700" : "text-zinc-700"}`}>{r.season}</td>
+                        <td className="px-3 py-2.5 text-zinc-700">{r.item}</td>
+                        <td className="px-3 py-2.5 font-bold text-teal-800">{r.itemCodePdm}</td>
+                        <td className={`px-3 py-2.5 ${badColor && !isPicked ? "font-semibold text-red-700" : "text-zinc-700"}`}>{r.color}</td>
+                        <td className="px-3 py-2.5 text-zinc-600">{styleLabel}</td>
                         <td className="whitespace-nowrap px-3 py-2.5"><span className={chip}><MapPin size={10} />{r.location}</span></td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold text-gray-800">{r.availableRoll} Roll / {r.availableYds} Yds</td>
+                        <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold text-zinc-800">{r.availableRoll} Roll / {r.availableYds} Yds</td>
                         <td className="whitespace-nowrap px-3 py-2.5 text-right"><PickBtn r={r} isPicked={isPicked} /></td>
                       </tr>
                     );
@@ -354,9 +354,9 @@ function IssueForm({ item, requisition, onIssued }) {
       )}
 
       {/* picked-rack cart */}
-      <div className={`space-y-2 rounded-xl p-2.5 ${soft}`}>
+      <div className={`space-y-2 rounded-md p-2.5 ${soft}`}>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
             {picked.length === 0 ? "Pick one or more racks above to issue from" : `${picked.length} rack${picked.length > 1 ? "s" : ""} picked`}
           </div>
           {/* Live "still need X Yds" summary, updates as amounts are typed. */}
@@ -368,8 +368,8 @@ function IssueForm({ item, requisition, onIssued }) {
         {picked.length > 0 && (
           <div className="space-y-1.5">
             {picked.map((p) => (
-              <div key={p.allocationId} className="flex flex-col gap-1.5 rounded-lg border border-[#D1E4F0] bg-white px-2.5 py-2 sm:flex-row sm:items-center">
-                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#2E8EC4] sm:w-20">
+              <div key={p.allocationId} className="flex flex-col gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-2 sm:flex-row sm:items-center">
+                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-teal-800 sm:w-20">
                   <MapPin size={11} />{p.location}
                 </span>
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -385,19 +385,19 @@ function IssueForm({ item, requisition, onIssued }) {
                   />
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <span className="whitespace-nowrap text-[10px] text-gray-400">max {p.availableRoll}/{p.availableYds}</span>
+                  <span className="whitespace-nowrap text-[10px] text-zinc-400">max {p.availableRoll}/{p.availableYds}</span>
                   {/* Per-row badge -- the outstanding requirement sits right
                       where the amount is being typed. */}
                   <span className={needChip}>{stillNeeded > 0 ? `Need: ${stillNeeded} Yds` : "Covered"}</span>
-                  <button type="button" onClick={() => removePicked(p.allocationId)} className="text-[11px] font-bold text-red-500 hover:underline">
+                  <button type="button" onClick={() => removePicked(p.allocationId)} className="text-[11px] font-bold text-red-700 hover:underline">
                     Remove
                   </button>
                 </div>
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <span className="text-[11px] text-gray-600">
-                Total: <b className="text-gray-800">{pickedTotalRoll} Roll / {pickedTotalYds} Yds</b>
+              <span className="text-[11px] text-zinc-600">
+                Total: <b className="text-zinc-800">{pickedTotalRoll} Roll / {pickedTotalYds} Yds</b>
               </span>
               <button type="button" onClick={handleIssueAll} disabled={busy} className={`${btnPrimary} ml-auto !px-3 !py-1.5 !text-xs`}>
                 {busy ? "Issuing…" : `Issue All (${picked.length})`}
@@ -406,13 +406,13 @@ function IssueForm({ item, requisition, onIssued }) {
           </div>
         )}
 
-        <div className="text-[10px] leading-snug text-gray-500">
+        <div className="text-[10px] leading-snug text-zinc-500">
           Up to {remainingYds} Yds remaining against the {item.requestedYds} Yds requested. Roll is entirely your
           call — Cutting didn&apos;t request a Roll count. Either Roll or Yds can be left at 0 on a picked rack (e.g.
           Yds-only or Roll-only issues are fine). Only the Item Code/PDM has to match — Color is not enforced, so
           racks of a different Color can be picked too (they&apos;re highlighted above). You can also issue more than
           requested if needed (you&apos;ll be asked to confirm).
-          {isDone && <span className="font-semibold text-green-600"> This item is already marked Fulfilled.</span>}
+          {isDone && <span className="font-semibold text-teal-800"> This item is already marked Fulfilled.</span>}
         </div>
         <ErrorBanner message={err} />
       </div>
@@ -433,20 +433,20 @@ function WorklistItem({ req, forceOpen, onAfterOpen, onIssued }) {
     <div className={`${card} overflow-hidden`}>
       <button
         type="button" onClick={() => setOpen((o) => !o)}
-        className={`flex w-full flex-wrap items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-[#DBEEFF] sm:px-4 ${open ? "bg-[#EEF6FC]" : "bg-white"}`}
+        className={`flex w-full flex-wrap items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-zinc-100 sm:px-4 ${open ? "bg-zinc-50" : "bg-white"}`}
       >
-        {open ? <ChevronUp size={14} className="shrink-0 text-gray-400" /> : <ChevronDown size={14} className="shrink-0 text-gray-400" />}
-        <span className="break-words text-sm font-bold text-gray-800">{req.buyer}</span>
+        {open ? <ChevronUp size={14} className="shrink-0 text-zinc-400" /> : <ChevronDown size={14} className="shrink-0 text-zinc-400" />}
+        <span className="break-words text-sm font-bold text-zinc-800">{req.buyer}</span>
         <span className={chip}><MapPin size={10} />{req.floor}</span>
-        <span className="break-words text-xs font-semibold text-gray-500">
+        <span className="break-words text-xs font-semibold text-zinc-500">
           Style {req.style}{req.model ? ` · ${req.model}` : ""} · {req.season}
         </span>
-        <span className="whitespace-nowrap text-[11px] font-medium text-gray-400">{d(req.date)}</span>
+        <span className="whitespace-nowrap text-[11px] font-medium text-zinc-400">{d(req.date)}</span>
         <span className="ml-auto">{statusChip(req.status)}</span>
       </button>
 
       {open && (
-        <div className="divide-y divide-gray-100 border-t border-gray-100">
+        <div className="divide-y divide-zinc-100 border-t border-zinc-200">
           {req.items.map((item) => {
             // Remaining = Requested minus Issued, floored at 0 -- its own
             // labeled figure so it never has to be worked out by hand.
@@ -456,9 +456,9 @@ function WorklistItem({ req, forceOpen, onAfterOpen, onIssued }) {
                 {/* "Cutting Requested" -- everything Cutting typed in (Pcs /
                    Wastage % / Consumption), the Requested Yds derived from
                    them, what's Issued so far, and what's still Remaining. */}
-                <div className={`rounded-xl px-3 py-2.5 ${soft}`}>
+                <div className={`rounded-md px-3 py-2.5 ${soft}`}>
                   <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#2E8EC4]">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-800">
                       <ClipboardList size={13} /> Cutting Requested
                     </div>
                     {statusChip(item.status)}
@@ -468,17 +468,17 @@ function WorklistItem({ req, forceOpen, onAfterOpen, onIssued }) {
                     <Field label="Floor" value={req.floor} />
                     <Field label="Season" value={req.season} />
                     <Field label="Style | Model" value={req.model ? `${req.style} | ${req.model}` : req.style} />
-                    <Field label="Item Code/PDM" value={item.itemCodePdm} valueClassName="text-[#2E8EC4]" />
+                    <Field label="Item Code/PDM" value={item.itemCodePdm} valueClassName="text-teal-800" />
                     <Field label="Color" value={item.color} />
                     <Field label="Pcs" value={item.pcs} />
                     <Field label="Wastage %" value={`${item.percentage}%`} />
                     <Field label="Consumption" value={`${item.consumption} yds/pc`} />
                     <Field label="Requested Yds" value={`${item.requestedYds} Yds`} valueClassName="text-base" />
-                    <Field label="Issued So Far" value={`${item.issuedRoll} Roll / ${item.issuedYds} Yds`} valueClassName="text-green-600" />
+                    <Field label="Issued So Far" value={`${item.issuedRoll} Roll / ${item.issuedYds} Yds`} valueClassName="text-teal-800" />
                     <Field
                       label="Remaining Yds"
                       value={`${remaining} Yds`}
-                      valueClassName={`text-base ${remaining > 0 ? "text-amber-600" : "text-green-600"}`}
+                      valueClassName={`text-base ${remaining > 0 ? "text-teal-800" : "text-teal-800"}`}
                     />
                   </div>
                 </div>
@@ -522,21 +522,21 @@ function HistoryTab() {
 
   return (
     <div className={`${card} overflow-hidden`}>
-      <div className="flex flex-wrap items-center gap-2.5 border-b border-gray-100 bg-gray-50 px-4 py-3 sm:px-5">
-        <HistoryIcon size={16} className="text-[#3B9ED4]" />
-        <h2 className="text-sm font-bold text-gray-800">Issue History</h2>
-        <span className="rounded-full bg-[#3B9ED4] px-2 py-0.5 text-xs font-semibold text-white">{rows.length}</span>
-        <span className="ml-auto hidden text-[10px] text-gray-400 sm:inline">Newest first</span>
+      <div className="flex flex-wrap items-center gap-2.5 border-b border-zinc-200 bg-zinc-50 px-4 py-3 sm:px-5">
+        <HistoryIcon size={16} className="text-teal-800" />
+        <h2 className="text-sm font-bold text-zinc-800">Issue History</h2>
+        <span className="rounded-full bg-teal-800 px-2 py-0.5 text-xs font-semibold text-white">{rows.length}</span>
+        <span className="ml-auto hidden text-[10px] text-zinc-400 sm:inline">Newest first</span>
       </div>
 
       <div className={`max-h-[70vh] overflow-auto ${scrollThin}`}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-gray-400">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3B9ED4]/25 border-t-[#3B9ED4]" />
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-zinc-400">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-teal-800" />
             Loading issue history…
           </div>
         ) : rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center text-sm text-gray-400">
+          <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center text-sm text-zinc-400">
             <HistoryIcon size={32} className="opacity-30" />
             Nothing has been issued yet.
           </div>
@@ -545,21 +545,21 @@ function HistoryTab() {
             {/* below lg: stacked cards */}
             <div className="space-y-2.5 p-3 lg:hidden">
               {rows.map((r) => (
-                <div key={r.id} className="space-y-2.5 rounded-xl border border-[#D1E4F0] bg-white p-3">
+                <div key={r.id} className="space-y-2.5 rounded-md border border-zinc-300 bg-white p-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="break-words text-sm font-bold text-gray-800">{r.buyer}</span>
+                    <span className="break-words text-sm font-bold text-zinc-800">{r.buyer}</span>
                     <span className={chip}><MapPin size={10} />{r.floor}</span>
-                    <span className="ml-auto whitespace-nowrap text-[11px] text-gray-400">{d(r.createdAt)}</span>
+                    <span className="ml-auto whitespace-nowrap text-[11px] text-zinc-400">{d(r.createdAt)}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg bg-[#EEF6FC] px-3 py-2.5">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-md bg-zinc-50 px-3 py-2.5">
                     <Field label="Req. Date" value={d(r.date)} />
                     <Field label="Season" value={r.season || "-"} />
                     <Field label="Style | Model" value={`${r.style}${r.model ? ` | ${r.model}` : ""}`} />
-                    <Field label="Item Code/PDM" value={r.itemCodePdm} valueClassName="text-[#2E8EC4]" />
+                    <Field label="Item Code/PDM" value={r.itemCodePdm} valueClassName="text-teal-800" />
                     <Field label="Color" value={r.color || "-"} />
                     <Field label="Requested Yds" value={`${r.requestedYds} Yds`} />
                     <Field label="Rack" value={r.location} />
-                    <Field label="Issued Qty" value={`${r.rollQty} Roll / ${r.yds} Yds`} valueClassName="text-green-600" />
+                    <Field label="Issued Qty" value={`${r.rollQty} Roll / ${r.yds} Yds`} valueClassName="text-teal-800" />
                   </div>
                 </div>
               ))}
@@ -572,18 +572,18 @@ function HistoryTab() {
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={r.id} className={`border-b border-gray-100 transition-colors hover:bg-[#DBEEFF] ${i % 2 ? "bg-[#EEF6FC]" : "bg-white"}`}>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-gray-600">{d(r.createdAt)}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-gray-600">{d(r.date)}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-gray-800">{r.buyer}</td>
+                  <tr key={r.id} className={`border-b border-zinc-200 transition-colors hover:bg-zinc-100 ${i % 2 ? "bg-zinc-50" : "bg-white"}`}>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-zinc-600">{d(r.createdAt)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-zinc-600">{d(r.date)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-zinc-800">{r.buyer}</td>
                     <td className="whitespace-nowrap px-3 py-2.5"><span className={chip}>{r.floor}</span></td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-gray-700">{r.season}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-gray-700">{r.style}{r.model ? ` | ${r.model}` : ""}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-bold text-[#2E8EC4]">{r.itemCodePdm}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-medium text-gray-800">{r.color}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-gray-700">{r.requestedYds} Yds</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-zinc-700">{r.season}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-zinc-700">{r.style}{r.model ? ` | ${r.model}` : ""}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 font-bold text-teal-800">{r.itemCodePdm}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 font-medium text-zinc-800">{r.color}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-zinc-700">{r.requestedYds} Yds</td>
                     <td className="whitespace-nowrap px-3 py-2.5"><span className={chip}><MapPin size={10} />{r.location}</span></td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-green-600">{r.rollQty} Roll / {r.yds} Yds</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-teal-800">{r.rollQty} Roll / {r.yds} Yds</td>
                   </tr>
                 ))}
               </tbody>
@@ -640,17 +640,17 @@ export default function CuttingIssuePage() {
   const refreshAll = () => { fetchWorklist(); fetchNotifications(); };
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] font-sans">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
 
       {/* ── Top bar (icon square, matches Material Receive / Material Stock) ── */}
-      <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <div className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#3B9ED4] shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-teal-800 ">
             <ClipboardList size={18} className="text-white" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-base font-bold leading-tight text-gray-800">Cutting Issue</h1>
-            <p className="truncate text-[10px] text-gray-400">Issue rack stock against cutting requisitions</p>
+            <h1 className="truncate text-base font-bold leading-tight text-zinc-800">Cutting Issue</h1>
+            <p className="truncate text-[10px] text-zinc-400">Issue rack stock against cutting requisitions</p>
           </div>
         </div>
         <NotificationBell
@@ -664,8 +664,8 @@ export default function CuttingIssuePage() {
       <div className="mx-auto max-w-[1700px] space-y-4 px-3 py-4 sm:px-4 sm:py-5">
 
         {/* ── Info note ── */}
-        <div className={`flex items-start gap-2.5 rounded-xl px-3 py-3 text-xs text-gray-600 sm:px-4 ${soft}`}>
-          <Info size={15} className="mt-0.5 shrink-0 text-[#3B9ED4]" />
+        <div className={`flex items-start gap-2.5 rounded-md px-3 py-3 text-xs text-zinc-600 sm:px-4 ${soft}`}>
+          <Info size={15} className="mt-0.5 shrink-0 text-teal-800" />
           <p>
             Fulfill requisitions sent by Cutting: check available rack stock for the requested Item Code/PDM, pick one
             or more racks, and issue the Yds needed. Roll is entirely your call — Cutting doesn&apos;t request a Roll count.
@@ -685,12 +685,12 @@ export default function CuttingIssuePage() {
 
         {tab === "history" ? <HistoryTab />
           : loading ? (
-            <div className={`${card} flex flex-col items-center justify-center gap-3 py-16 text-sm text-gray-400`}>
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3B9ED4]/25 border-t-[#3B9ED4]" />
+            <div className={`${card} flex flex-col items-center justify-center gap-3 py-16 text-sm text-zinc-400`}>
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-teal-800" />
               Loading worklist…
             </div>
           ) : worklist.length === 0 ? (
-            <div className={`${card} flex flex-col items-center justify-center gap-3 py-16 text-sm text-gray-400`}>
+            <div className={`${card} flex flex-col items-center justify-center gap-3 py-16 text-sm text-zinc-400`}>
               <PackageSearch size={32} className="opacity-30" />
               No pending cutting requisitions.
             </div>
